@@ -6,11 +6,10 @@ interface UserState {
   user: User | null;
   income: Income | null;
   
-  // Actions
   setUser: (user: Partial<User>) => void;
-  setIncome: (income: Partial<Income>) => void;
+  setIncome: (income: Income) => void;
   completeOnboarding: () => void;
-  updateBalance: (amount: number) => void; // Can be negative for subtraction
+  updateBalance: (amount: number) => void;
   resetUser: () => void;
 }
 
@@ -21,12 +20,19 @@ export const useUserStore = create<UserState>()(
       income: null,
 
       setUser: (userData) => set((state) => ({ 
-        user: state.user ? { ...state.user, ...userData } : { ...userData } as User 
+        user: state.user ? { ...state.user, ...userData } : { 
+          name: '', 
+          balance: 0, 
+          currency: 'PKR', 
+          theme: 'dark',
+          hostelDaysMode: false,
+          isOnboarded: false,
+          id: crypto.randomUUID(),
+          ...userData 
+        } as User 
       })),
 
-      setIncome: (incomeData) => set((state) => ({ 
-        income: state.income ? { ...state.income, ...incomeData } : { ...incomeData } as Income 
-      })),
+      setIncome: (income) => set({ income }),
 
       completeOnboarding: () => set((state) => {
         if (state.user) {
@@ -45,7 +51,7 @@ export const useUserStore = create<UserState>()(
       resetUser: () => set({ user: null, income: null }),
     }),
     {
-      name: 'pocketflow-user-store-v1',
+      name: 'pocketflow-user-store-v2',
     }
   )
 );

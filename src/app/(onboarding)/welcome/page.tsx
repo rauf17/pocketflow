@@ -121,6 +121,7 @@ export default function WelcomePage() {
       });
       
       setIncome({
+        id: crypto.randomUUID(),
         amount: Number(incomeAmount),
         nextDate: new Date(incomeDate).toISOString(),
         frequency: "monthly"

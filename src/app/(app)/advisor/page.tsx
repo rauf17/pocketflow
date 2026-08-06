@@ -1,192 +1,249 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Sparkles } from "lucide-react";
-import { useAIStore } from "@/store/useAIStore";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { Brain, ArrowRight, Target, TrendingDown, RefreshCcw, Loader2 } from "lucide-react";
 import { useUserStore } from "@/store/useUserStore";
-import { useBudgetStore } from "@/store/useBudgetStore";
 import { useExpenseStore } from "@/store/useExpenseStore";
+import { useProfileStore } from "@/store/useProfileStore";
+import { useGoalStore } from "@/store/useGoalStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, startOfDay, isBefore, isEqual } from "date-fns";
 
 export default function AdvisorPage() {
-  const { conversations, addConversation, addMessage, activeConversationId } = useAIStore();
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-
-  // Auto-create a conversation if none exists
-  if (conversations.length === 0 && !activeConversationId) {
-    addConversation({ messages: [], contextUsed: {} });
-  }
-
-  const activeChat = conversations.find(c => c.id === activeConversationId) || conversations[0];
-
   const { user, income } = useUserStore();
-  const { recurringBudgets } = useBudgetStore();
   const { expenses } = useExpenseStore();
+  const { weeklyPlan, profiles } = useProfileStore();
+  const { goals } = useGoalStore();
 
-  const generateContext = () => {
-    if (!user || !income) return {};
-    
-    const today = startOfDay(new Date());
-    const incomeDate = startOfDay(new Date(income.nextDate));
-    const daysUntilIncome = Math.max(0, differenceInDays(incomeDate, today));
+  const [customScenario, setCustomScenario] = useState("");
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationResult, setSimulationResult] = useState<{title: string, impact: "positive" | "negative" | "neutral", summary: string} | null>(null);
 
-    let upcomingBillsTotal = 0;
-    recurringBudgets.forEach(bill => {
-      const billDate = startOfDay(new Date(bill.nextDueDate));
-      if (isBefore(billDate, incomeDate) || isEqual(billDate, incomeDate)) {
-        upcomingBillsTotal += bill.amount;
-      }
-    });
+  const scenarios = [
+    {
+      id: "afford",
+      title: "Can I afford this?",
+      description: "Check if a specific purchase is safe.",
+      icon: Target,
+      prompt: "I want to buy something for [AMOUNT]. Can I afford it today?",
+      actionText: "Check Purchase"
+    },
+    {
+      id: "delayed",
+      title: "Salary Delayed",
+      description: "What happens if income is late?",
+      icon: ClockIcon, // Need to define or import Clock, replacing with RefreshCcw for now
+      prompt: "What happens to my safe limit if my salary is delayed by 5 days?",
+      actionText: "Simulate Delay"
+    },
+    {
+      id: "inflation",
+      title: "Cost Increase",
+      description: "If recurring bills increase by 20%.",
+      icon: TrendingDown,
+      prompt: "Simulate a 20% increase in my upcoming bills. What is the impact?",
+      actionText: "Simulate Increase"
+    }
+  ];
 
-    const safeBalance = Math.max(0, user.balance - upcomingBillsTotal);
-    const safeLimit = daysUntilIncome === 0 ? safeBalance : safeBalance / daysUntilIncome;
-    
-    const expensesToday = expenses
-      .filter(e => startOfDay(new Date(e.date)).getTime() === today.getTime())
-      .reduce((sum, e) => sum + e.amount, 0);
+  const runSimulation = async (prompt: string) => {
+    setIsSimulating(true);
+    setSimulationResult(null);
 
-    return {
-      currentBalance: user.balance,
-      daysUntilIncome,
-      upcomingBillsTotal,
-      safeDailyLimit: safeLimit,
-      spentToday: expensesToday,
-      remainingToday: safeLimit - expensesToday,
-    };
-  };
-
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || !activeChat) return;
-
-    const userMsg = input;
-    addMessage(activeChat.id, "user", userMsg);
-    setInput("");
-    setIsTyping(true);
-
+    // Call actual Gemini API here
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMsg,
-          context: generateContext(),
-          history: activeChat.messages
+          message: prompt,
+          history: [],
+          context: {
+            balance: user?.balance,
+            income: income?.amount,
+            recentExpenses: expenses.slice(0, 5),
+            weeklyPlan,
+            profiles,
+            goals: goals.map(g => ({ name: g.name, priority: g.priority, status: g.status, targetAmount: g.targetAmount, currentSaved: g.currentSaved, monthlyContribution: g.monthlyContribution }))
+          }
         })
       });
 
-      const data = await res.json();
+      const data = await response.json();
       
       if (data.error) {
-        addMessage(activeChat.id, "ai", data.error);
-      } else {
-        addMessage(activeChat.id, "ai", data.response);
+        setSimulationResult({
+          title: "Simulation Error",
+          impact: "negative",
+          summary: data.error
+        });
+        setIsSimulating(false);
+        return;
       }
-    } catch {
-      addMessage(activeChat.id, "ai", "Connection error. Please try again.");
-    } finally {
-      setIsTyping(false);
+
+      const text = data.response || "";
+      const lowerText = text.toLowerCase();
+      let impact: "positive" | "negative" | "neutral" = "neutral";
+      
+      if (lowerText.includes("no") || lowerText.includes("cannot") || lowerText.includes("caution") || lowerText.includes("careful") || lowerText.includes("warning") || lowerText.includes("negative") || lowerText.includes("reduce") || lowerText.includes("overspend")) {
+        impact = "negative";
+      } else if (lowerText.includes("yes") || lowerText.includes("can afford") || lowerText.includes("safe") || lowerText.includes("positive") || lowerText.includes("good")) {
+        impact = "positive";
+      }
+
+      setSimulationResult({
+        title: "Simulation Complete",
+        impact,
+        summary: text
+      });
+      setIsSimulating(false);
+
+    } catch (error) {
+      console.error(error);
+      setIsSimulating(false);
     }
   };
 
-  return (
-    <div className="flex flex-col h-screen w-full max-w-4xl mx-auto pt-4 px-4 pb-20 md:pb-4 relative">
-      
-      {/* Decorative Glow */}
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[80vw] max-w-2xl h-[40vh] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
 
-      <header className="w-full flex items-center justify-center py-4 border-b border-white/5 mb-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-xl font-medium tracking-tight text-foreground/90">PocketFlow Advisor</h2>
-        </div>
+  const itemVariants: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } }
+  };
+
+  return (
+    <div className="flex flex-col items-center w-full max-w-3xl mx-auto pt-16 px-6 pb-32">
+      
+      <header className="w-full flex flex-col mb-12">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
+          <Brain className="w-8 h-8 text-foreground" />
+          <h2 className="text-3xl font-light tracking-tight">Decision Center</h2>
+        </motion.div>
+        <motion.p initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="text-sm text-muted-foreground mt-2">
+          Run financial simulations powered by Gemini before making a move.
+        </motion.p>
       </header>
 
-      {/* Chat History */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-6 p-4">
-        {activeChat?.messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50 mt-10">
-            <Bot className="w-16 h-16 mb-4 stroke-1" />
-            <h3 className="text-2xl font-light mb-2">How can I help you?</h3>
-            <div className="flex flex-col gap-2 mt-4 text-sm text-muted-foreground w-full max-w-xs">
-              <Button variant="glass" className="justify-start whitespace-normal h-auto py-3 text-left" onClick={() => setInput("Can I afford a $150 jacket right now?")}>
-                &quot;Can I afford a $150 jacket right now?&quot;
-              </Button>
-              <Button variant="glass" className="justify-start whitespace-normal h-auto py-3 text-left" onClick={() => setInput("What happens if my salary is delayed by 3 days?")}>
-                &quot;What happens if my salary is delayed by 3 days?&quot;
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {activeChat?.messages.map((msg, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-              >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  msg.role === "user" ? "bg-foreground text-background" : "bg-indigo-500/20 text-indigo-400"
-                }`}>
-                  {msg.role === "user" ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-                </div>
-                <div className={`flex flex-col max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                  <div className={`px-5 py-3.5 rounded-3xl ${
-                    msg.role === "user" 
-                      ? "bg-white/10 text-foreground rounded-tr-sm" 
-                      : "bg-indigo-500/10 border border-indigo-500/20 text-foreground/90 font-light leading-relaxed rounded-tl-sm"
-                  }`}>
-                    {msg.content}
-                  </div>
+      <div className="w-full">
+        <AnimatePresence mode="wait">
+          {simulationResult ? (
+            <motion.div 
+              key="result"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`flex flex-col p-8 rounded-[2rem] border backdrop-blur-xl relative overflow-hidden ${
+                simulationResult.impact === 'negative' ? 'bg-flow-amber/10 border-flow-amber/20' : 
+                simulationResult.impact === 'positive' ? 'bg-flow-emerald/10 border-flow-emerald/20' : 
+                'bg-card/40 border-white/10'
+              }`}
+            >
+              <h3 className="text-xl font-medium tracking-tight mb-4">{simulationResult.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">{simulationResult.summary}</p>
+              
+              <div className="mt-8">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSimulationResult(null)}
+                  className="rounded-full px-6 bg-transparent border-white/20 hover:bg-white/5"
+                >
+                  <RefreshCcw className="w-4 h-4 mr-2" />
+                  Run Another Scenario
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="scenarios"
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              exit="hidden"
+              className="flex flex-col gap-8"
+            >
+              
+              {/* Custom Scenario */}
+              <motion.div variants={itemVariants} className="relative group">
+                <div className="absolute inset-0 bg-white/5 blur-xl rounded-[2rem] -z-10 group-focus-within:bg-white/10 transition-colors duration-500" />
+                <div className="flex items-center relative">
+                  <Input
+                    value={customScenario}
+                    onChange={(e) => setCustomScenario(e.target.value)}
+                    placeholder="Ask 'What if I buy a laptop for 100k today?'"
+                    className="h-16 pl-6 pr-32 rounded-[2rem] bg-card/60 border border-white/10 text-lg font-light placeholder:text-muted-foreground/40 focus-visible:ring-1 focus-visible:ring-white/20"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customScenario) {
+                        runSimulation(customScenario);
+                      }
+                    }}
+                  />
+                  <Button 
+                    size="sm"
+                    className="absolute right-2 h-12 rounded-xl bg-foreground text-background px-6"
+                    onClick={() => runSimulation(customScenario)}
+                    disabled={!customScenario || isSimulating}
+                  >
+                    {isSimulating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simulate"}
+                  </Button>
                 </div>
               </motion.div>
-            ))}
-            
-            {isTyping && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex gap-4"
-              >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-indigo-500/20 text-indigo-400">
-                  <Bot className="w-5 h-5" />
-                </div>
-                <div className="px-5 py-4 rounded-3xl rounded-tl-sm bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-1.5">
-                  <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-2 h-2 rounded-full bg-indigo-400" />
-                  <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-indigo-400" />
-                  <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-indigo-400" />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
-      </div>
 
-      {/* Input Area */}
-      <div className="p-4 bg-background/80 backdrop-blur-3xl shrink-0 border-t border-white/5 rounded-t-3xl md:rounded-3xl md:border mb-2 relative z-10">
-        <form onSubmit={handleSend} className="relative flex items-center">
-          <Input 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your financial momentum..."
-            className="w-full h-14 pl-6 pr-14 rounded-full bg-card/50 border-white/10 text-base"
-          />
-          <Button 
-            type="submit"
-            disabled={!input.trim() || isTyping}
-            size="icon" 
-            className="absolute right-2 w-10 h-10 rounded-full bg-indigo-500 text-white hover:bg-indigo-600 shadow-md shadow-indigo-500/20"
-          >
-            <Send className="w-4 h-4 ml-0.5" />
-          </Button>
-        </form>
+              <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground ml-2 mt-4">
+                Common Scenarios
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {scenarios.map((scenario) => (
+                  <motion.button
+                    key={scenario.id}
+                    variants={itemVariants}
+                    onClick={() => runSimulation(scenario.prompt)}
+                    disabled={isSimulating}
+                    className="flex flex-col text-left p-6 rounded-[2rem] bg-card/40 border border-white/5 hover:bg-card/60 transition-all hover:scale-[1.02] group"
+                  >
+                    <div className="p-3 rounded-2xl bg-white/5 mb-6 group-hover:bg-foreground group-hover:text-background transition-colors w-min">
+                      <scenario.icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-medium text-foreground/90 mb-2">{scenario.title}</h3>
+                    <p className="text-xs text-muted-foreground mb-6 line-clamp-2">{scenario.description}</p>
+                    
+                    <div className="mt-auto flex items-center text-xs font-medium text-foreground/70 group-hover:text-foreground transition-colors">
+                      {scenario.actionText}
+                      <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      
     </div>
+  );
+}
+
+// Temporary icon fallback if missing
+function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
   );
 }

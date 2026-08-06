@@ -3,9 +3,9 @@ export interface User {
   name: string;
   currency: string;
   theme: 'dark' | 'light' | 'system';
-  hostelDaysMode: boolean; // Special mode for students
+  hostelDaysMode: boolean;
   isOnboarded: boolean;
-  balance: number; // Current balance
+  balance: number;
 }
 
 export interface Income {
@@ -18,7 +18,7 @@ export interface Income {
 export interface Category {
   id: string;
   name: string;
-  icon: string; // Lucide icon name
+  icon: string;
   color: string;
 }
 
@@ -41,5 +41,34 @@ export interface RecurringBudget {
 export interface AIConversation {
   id: string;
   messages: Array<{ role: 'user' | 'ai'; content: string; timestamp: string }>;
-  contextUsed: Record<string, unknown>; // Snapshot of finances at the time
+  contextUsed: Record<string, unknown>;
+}
+
+export interface DayProfile {
+  id: string;
+  name: string;
+  type: 'safe' | 'low' | 'normal' | 'high' | 'custom';
+  expectedSpend: number;
+  icon: string;
+  color: string;
+}
+
+// --- Financial Goals (Core Pillar) ---
+
+export type GoalPriority = 'critical' | 'important' | 'planned' | 'nice-to-have';
+export type GoalStatus = 'on-track' | 'ahead' | 'behind' | 'at-risk' | 'completed';
+
+export interface Goal {
+  id: string;
+  name: string;
+  icon: string;           // Lucide icon name
+  color: string;          // Tailwind color key e.g. 'emerald', 'blue', 'amber', 'rose'
+  priority: GoalPriority;
+  targetAmount: number;
+  currentSaved: number;
+  monthlyContribution: number; // How much to reserve per month/pay cycle
+  targetDate?: string;         // ISO String (optional)
+  notes?: string;
+  status: GoalStatus;
+  createdAt: string;           // ISO String
 }
