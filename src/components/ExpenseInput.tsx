@@ -4,6 +4,8 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { usePocketStore } from "@/store/usePocketStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function ExpenseInput() {
   const { addExpense } = usePocketStore();
@@ -27,72 +29,80 @@ export function ExpenseInput() {
 
   return (
     <div className="relative w-full max-w-md mx-auto mt-8">
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {!isOpen && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
+          <motion.div
+            key="button"
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary-foreground py-4 rounded-2xl transition-colors border border-primary/20 backdrop-blur-md"
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="w-full"
           >
-            <Plus className="w-5 h-5" />
-            <span className="font-medium text-lg tracking-wide">Add Expense</span>
-          </motion.button>
+            <Button
+              variant="glass"
+              size="lg"
+              className="w-full text-lg tracking-wide gap-2 h-16 rounded-2xl"
+              onClick={() => setIsOpen(true)}
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Expense</span>
+            </Button>
+          </motion.div>
         )}
 
         {isOpen && (
           <motion.form
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            key="form"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onSubmit={handleSubmit}
-            className="w-full bg-card/50 backdrop-blur-xl border border-border/50 rounded-3xl p-6 shadow-2xl flex flex-col gap-4"
+            className="w-full bg-card/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-glass flex flex-col gap-4 relative z-20"
           >
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-semibold tracking-tight text-foreground/90">New Expense</h3>
-              <button 
-                type="button" 
+              <h3 className="text-xl font-medium tracking-tight text-foreground/90">New Expense</h3>
+              <Button 
+                variant="ghost" 
+                size="icon-sm"
                 onClick={() => setIsOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors p-2 -mr-2"
+                className="text-muted-foreground hover:text-foreground -mr-2"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
             
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-muted-foreground">$</span>
-              <input
+              <Input
                 autoFocus
                 type="number"
                 step="0.01"
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-background/50 border border-border/50 rounded-2xl py-4 pl-10 pr-4 text-3xl font-light text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/30"
+                className="pl-10 text-3xl font-light h-16 rounded-2xl placeholder:text-muted-foreground/30 border-white/10"
                 required
               />
             </div>
             
-            <input
+            <Input
               type="text"
               placeholder="What was this for?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-background/50 border border-border/50 rounded-2xl py-4 px-4 text-lg font-light text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/50"
+              className="text-lg font-light h-14 rounded-2xl placeholder:text-muted-foreground/50 border-white/10"
             />
             
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
+            <Button
               type="submit"
+              size="lg"
               disabled={!amount || isNaN(Number(amount))}
-              className="w-full bg-foreground text-background py-4 rounded-2xl font-medium text-lg mt-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full mt-2 h-14 rounded-2xl font-medium text-lg bg-foreground text-background hover:bg-foreground/90"
             >
               Confirm
-            </motion.button>
+            </Button>
           </motion.form>
         )}
       </AnimatePresence>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePocketStore } from "@/store/usePocketStore";
 
 export function LivingFlow() {
-  const { getRemainingBudgetToday, getSafeSpendingLimit } = usePocketStore();
+  const { getRemainingBudgetToday } = usePocketStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

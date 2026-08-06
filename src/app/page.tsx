@@ -40,27 +40,29 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="w-full max-w-md flex flex-col items-center mt-12 mb-16 z-10">
+      <section className="w-full max-w-md flex flex-col items-center mt-16 mb-20 z-10">
         <motion.p 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-muted-foreground text-lg mb-2"
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="text-muted-foreground text-lg font-medium mb-4"
         >
           Today&apos;s safe limit
         </motion.p>
         <motion.h2 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-6xl font-light tracking-tighter mb-4"
+          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.05 }}
+          className="text-[72px] font-light tracking-[-0.04em] leading-none mb-6 text-foreground drop-shadow-sm"
         >
           ${limit.toFixed(2)}
         </motion.h2>
 
-        <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-border/50 to-transparent my-6" />
+        <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent my-8" />
 
-        <div className="flex flex-col items-center gap-1">
-          <p className="text-sm text-muted-foreground">Remaining today</p>
-          <p className={`text-2xl font-medium ${isOverBudget ? 'text-flow-amber' : 'text-flow-emerald'}`}>
+        <div className="flex flex-col items-center gap-1.5">
+          <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">Remaining today</p>
+          <p className={`text-2xl font-medium tracking-tight ${isOverBudget ? 'text-flow-amber' : 'text-flow-emerald'}`}>
             {isOverBudget ? '-' : ''}${Math.abs(remaining).toFixed(2)}
           </p>
         </div>
