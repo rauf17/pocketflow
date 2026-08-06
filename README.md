@@ -44,6 +44,34 @@ PocketFlow shifts budgeting from **tracking history** to **planning the future**
 
 ---
 
+## Why PocketFlow?
+
+PocketFlow is built around three core pillars.
+
+### 💸 Spend Intentionally
+
+Know exactly how much you can safely spend today.
+
+---
+
+### 🎯 Protect Your Goals
+
+Every financial goal is accounted for before your daily budget is calculated.
+
+---
+
+### 🤖 Think Ahead
+
+PocketFlow AI helps you understand the consequences of every purchase before you make it.
+
+No surprises.
+
+No guesswork.
+
+Just smarter financial decisions.
+
+---
+
 # 🚀 Core Features
 
 ## 💰 Smart Daily Budget
