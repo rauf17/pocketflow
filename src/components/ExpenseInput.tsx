@@ -3,17 +3,22 @@
 import { useState } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { Plus, X } from "lucide-react";
-import { usePocketStore } from "@/store/usePocketStore";
+import { useExpenseStore } from "@/store/useExpenseStore";
+import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { getCurrencySymbol } from "@/lib/utils";
+
 export function ExpenseInput() {
-  const { addExpense } = usePocketStore();
+  const { addExpense } = useExpenseStore();
+  const { updateBalance, user } = useUserStore();
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   
+  const currencySymbol = getCurrencySymbol(user?.currency);
   const controls = useAnimation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +39,9 @@ export function ExpenseInput() {
       addExpense({
         amount: Number(amount),
         description: description || "Expense",
+        date: new Date().toISOString()
       });
+      updateBalance(-Number(amount));
       setAmount("");
       setDescription("");
       setIsOpen(false);
@@ -103,7 +110,7 @@ export function ExpenseInput() {
             </div>
             
             <motion.div animate={controls} className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-muted-foreground">$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-muted-foreground">{currencySymbol}</span>
               <Input
                 autoFocus
                 type="number"

@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 interface AnimatedCounterProps {
   value: number;
   className?: string;
+  symbol?: string;
 }
 
-export function AnimatedCounter({ value, className }: AnimatedCounterProps) {
+export function AnimatedCounter({ value, className, symbol = "$" }: AnimatedCounterProps) {
   // Format the number to exactly 2 decimal places and split into an array of characters
   const formattedValue = value.toFixed(2);
   const characters = formattedValue.split('');
@@ -17,7 +18,7 @@ export function AnimatedCounter({ value, className }: AnimatedCounterProps) {
   
   return (
     <div className={`flex overflow-hidden tabular-nums ${className || ''}`}>
-      <span className="mr-1">$</span>
+      <span className="mr-1">{symbol}</span>
       <AnimatePresence mode="popLayout">
         {characters.map((char, index) => {
           // If it's the decimal point, just render it statically

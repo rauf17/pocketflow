@@ -2,11 +2,31 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { usePocketStore } from "@/store/usePocketStore";
+import { useUserStore } from "@/store/useUserStore";
+import { useExpenseStore } from "@/store/useExpenseStore";
+import { startOfDay, differenceInDays } from "date-fns";
 
 export function LivingFlow() {
-  const { getRemainingBudgetToday } = usePocketStore();
+  const { user, income } = useUserStore();
+  const { expenses } = useExpenseStore();
   const [mounted, setMounted] = useState(false);
+
+  const getSafeSpendingLimit = () => {
+    if (!user || !income) return 0;
+    const today = startOfDay(new Date());
+    const incomeDate = startOfDay(new Date(income.nextDate));
+    const days = Math.max(0, differenceInDays(incomeDate, today));
+    return days === 0 ? user.balance : user.balance / days;
+  };
+
+  const getRemainingBudgetToday = () => {
+    const limit = getSafeSpendingLimit();
+    const today = startOfDay(new Date());
+    const expensesToday = expenses
+      .filter(e => startOfDay(new Date(e.date)).getTime() === today.getTime())
+      .reduce((sum, e) => sum + e.amount, 0);
+    return limit - expensesToday;
+  };
 
   useEffect(() => {
     setMounted(true);
