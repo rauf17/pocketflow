@@ -158,21 +158,38 @@ FlowPath transforms budgeting into something intuitive and visual.
 
 ---
 
-## 🤖 PocketFlow AI *(Coming Soon)*
+## 🤖 PocketFlow AI
 
-Your financial co-pilot.
+Meet your personal financial co-pilot.
+
+PocketFlow AI understands your:
+
+- Current balance
+- Daily budget
+- Weekly planner
+- Recurring bills
+- Financial goals
+- Goal priorities
+- Spending history
+- Upcoming income
 
 Ask questions naturally.
 
-> Can I afford a Rs650 burger today?
+> Can I afford a Rs650 shawarma today?
 
-> What happens if I skip this month's laptop contribution?
+> Will buying these shoes delay my Ireland trip?
 
-> Will buying this delay my Ireland trip?
+> What happens if my salary is delayed by one week?
 
-> Can I still reach my emergency fund?
+> Can I increase my petrol budget this month?
 
-PocketFlow explains the consequences before you spend.
+> Should I skip this purchase?
+
+PocketFlow AI doesn't just answer with your balance.
+
+It simulates the impact on your future and explains the trade-offs before you spend.
+
+Unlike generic AI assistants, PocketFlow AI has full context of your financial plan, allowing it to provide personalized, transparent, and actionable recommendations.
 
 ---
 
