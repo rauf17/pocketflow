@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { usePocketStore } from "@/store/usePocketStore";
 import { Button } from "@/components/ui/button";
@@ -12,23 +12,38 @@ export function ExpenseInput() {
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  const controls = useAnimation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || isNaN(Number(amount))) return;
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      // Trigger error shake
+      await controls.start({
+        x: [0, -4, 4, -4, 4, 0],
+        transition: { duration: 0.3, type: "spring", stiffness: 800 }
+      });
+      return;
+    }
     
-    addExpense({
-      amount: Number(amount),
-      description: description || "Expense",
-    });
+    // Trigger Success
+    setIsSuccess(true);
     
-    setAmount("");
-    setDescription("");
-    setIsOpen(false);
+    setTimeout(() => {
+      addExpense({
+        amount: Number(amount),
+        description: description || "Expense",
+      });
+      setAmount("");
+      setDescription("");
+      setIsOpen(false);
+      setIsSuccess(false);
+    }, 400); // Wait for collapse animation
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto mt-8">
+    <div className="relative w-full max-w-md mx-auto mt-8 flex flex-col items-center">
       <AnimatePresence mode="wait">
         {!isOpen && (
           <motion.div
@@ -37,17 +52,30 @@ export function ExpenseInput() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="w-full"
+            className="w-full relative"
           >
             <Button
               variant="glass"
               size="lg"
-              className="w-full text-lg tracking-wide gap-2 h-16 rounded-2xl"
+              className="w-full text-lg tracking-wide gap-2 h-16 rounded-2xl relative z-10"
               onClick={() => setIsOpen(true)}
             >
               <Plus className="w-5 h-5" />
               <span>Add Expense</span>
             </Button>
+            
+            {/* Success Ripple Ring */}
+            <AnimatePresence>
+              {isSuccess && (
+                <motion.div
+                  initial={{ scale: 1, opacity: 0.8 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="absolute inset-0 rounded-2xl border-2 border-flow-emerald z-0"
+                />
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
@@ -55,15 +83,16 @@ export function ExpenseInput() {
           <motion.form
             key="form"
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1, height: "auto" }}
+            exit={isSuccess ? { opacity: 0, scale: 0.9, y: 10 } : { opacity: 0, y: 10, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
             onSubmit={handleSubmit}
-            className="w-full bg-card/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-glass flex flex-col gap-4 relative z-20"
+            className="w-full bg-card/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-glass flex flex-col gap-4 relative z-20 overflow-hidden"
           >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-medium tracking-tight text-foreground/90">New Expense</h3>
               <Button 
+                type="button"
                 variant="ghost" 
                 size="icon-sm"
                 onClick={() => setIsOpen(false)}
@@ -73,7 +102,7 @@ export function ExpenseInput() {
               </Button>
             </div>
             
-            <div className="relative">
+            <motion.div animate={controls} className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-muted-foreground">$</span>
               <Input
                 autoFocus
@@ -83,9 +112,8 @@ export function ExpenseInput() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="pl-10 text-3xl font-light h-16 rounded-2xl placeholder:text-muted-foreground/30 border-white/10"
-                required
               />
-            </div>
+            </motion.div>
             
             <Input
               type="text"
@@ -98,8 +126,7 @@ export function ExpenseInput() {
             <Button
               type="submit"
               size="lg"
-              disabled={!amount || isNaN(Number(amount))}
-              className="w-full mt-2 h-14 rounded-2xl font-medium text-lg bg-foreground text-background hover:bg-foreground/90"
+              className="w-full mt-2 h-14 rounded-2xl font-medium text-lg bg-foreground text-background hover:bg-foreground/90 transition-transform"
             >
               Confirm
             </Button>

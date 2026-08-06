@@ -4,10 +4,18 @@ import { useEffect, useState } from "react";
 import { usePocketStore } from "@/store/usePocketStore";
 import { LivingFlow } from "@/components/LivingFlow";
 import { ExpenseInput } from "@/components/ExpenseInput";
-import { motion } from "framer-motion";
+import { SettingsPanel } from "@/components/SettingsPanel";
+import { TransactionHistory } from "@/components/TransactionHistory";
+import { AnimatedCounter } from "@/components/AnimatedCounter";
+import { motion, AnimatePresence } from "framer-motion";
+import { Settings, History } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
   const { balance, getDaysUntilIncome, getSafeSpendingLimit, getRemainingBudgetToday } = usePocketStore();
 
   useEffect(() => {
@@ -33,14 +41,19 @@ export default function Home() {
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-flow-emerald/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[20%] right-[-10%] w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <header className="w-full max-w-md flex justify-between items-center py-6 mt-4 z-10">
-        <h1 className="text-xl font-medium tracking-tight text-foreground/80">PocketFlow</h1>
-        <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full backdrop-blur-md">
+      <header className="w-full max-w-md flex justify-between items-center py-4 mt-2 z-10">
+        <Button variant="ghost" size="icon" onClick={() => setShowHistory(true)} className="text-muted-foreground hover:text-foreground">
+          <History className="w-5 h-5" />
+        </Button>
+        <div className="text-sm font-medium tracking-wide text-foreground/80 bg-secondary/50 px-4 py-1.5 rounded-full backdrop-blur-md">
           {days} days until income
         </div>
+        <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} className="text-muted-foreground hover:text-foreground">
+          <Settings className="w-5 h-5" />
+        </Button>
       </header>
 
-      <section className="w-full max-w-md flex flex-col items-center mt-16 mb-20 z-10">
+      <section className="w-full max-w-md flex flex-col items-center mt-12 mb-16 z-10">
         <motion.p 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -49,14 +62,17 @@ export default function Home() {
         >
           Today&apos;s safe limit
         </motion.p>
-        <motion.h2 
+        <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.05 }}
-          className="text-[72px] font-light tracking-[-0.04em] leading-none mb-6 text-foreground drop-shadow-sm"
+          className="mb-6 drop-shadow-sm"
         >
-          ${limit.toFixed(2)}
-        </motion.h2>
+          <AnimatedCounter 
+            value={limit} 
+            className="text-[72px] font-light tracking-[-0.04em] leading-none text-foreground"
+          />
+        </motion.div>
 
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent my-8" />
 
@@ -68,7 +84,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="w-full max-w-2xl z-10 my-8">
+      <div className="w-full max-w-2xl z-10 my-4">
         <LivingFlow />
       </div>
 
@@ -78,8 +94,27 @@ export default function Home() {
 
       <footer className="w-full max-w-md py-8 flex justify-between items-center text-muted-foreground/60 text-xs mt-auto z-10">
         <span>Balance: ${balance.toFixed(2)}</span>
-        <span>MVP Data</span>
+        <span>PocketFlow OS</span>
       </footer>
+
+      {/* Slide-in Panels */}
+      <AnimatePresence>
+        {showHistory && <TransactionHistory onClose={() => setShowHistory(false)} />}
+        {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
+      </AnimatePresence>
+
+      {/* Dimmed backdrop when a panel is open */}
+      <AnimatePresence>
+        {(showHistory || showSettings) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => { setShowHistory(false); setShowSettings(false); }}
+            className="fixed inset-0 bg-background/50 backdrop-blur-sm z-40"
+          />
+        )}
+      </AnimatePresence>
     </main>
   );
 }
