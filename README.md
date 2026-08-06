@@ -4,330 +4,408 @@
 
 ### **The co-pilot for your wallet.**
 
-A modern financial operating system that helps you answer one simple question before every purchase.
+*A financial operating system that helps you make better spending decisions every single day.*
 
-> **"Can I afford this today?"**
-
-Instead of tracking where your money went, PocketFlow helps you decide where your money should go.
-
-**Built with Next.js • TypeScript • Tailwind CSS • Framer Motion • Zustand**
+<p>
+  <img src="https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" />
+  <img src="https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss" />
+  <img src="https://img.shields.io/badge/Zustand-State-orange?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Vercel-Deployed-black?style=for-the-badge&logo=vercel" />
+</p>
 
 ---
 
-<!-- Replace with screenshot -->
-<img src="./public/og-image.png" alt="PocketFlow Preview" width="100%" />
+### **Know today's limit. Protect tomorrow's goals.**
+
+PocketFlow isn't another expense tracker.
+
+It's your personal financial co-pilot.
 
 </div>
 
 ---
 
-## ✨ Why PocketFlow?
+# ✨ What is PocketFlow?
 
-Most budgeting apps are built around **history**.
+Most budgeting apps tell you where your money **went**.
 
-They show charts.
+PocketFlow tells you what you should do **next**.
 
-Pie graphs.
+Every time you open the app, you instantly know:
 
-Categories.
-
-Transactions.
-
-PocketFlow is built around **decision making**.
-
-Every time you open the app, you immediately know:
-
-- 💰 How much money you have left
+- 💸 How much you can safely spend today
 - 📅 How many days remain until your next income
-- 🎯 How much you can safely spend today
-- 🤖 Whether you can afford your next purchase
-- 🌊 How today's spending affects the rest of the month
+- 🎯 Whether your financial goals are still on track
+- 🤖 How today's purchase affects tomorrow
+- 🌊 How your spending changes the rest of the month
 
-PocketFlow isn't an expense tracker.
-
-It's your financial co-pilot.
+PocketFlow shifts budgeting from **tracking history** to **planning the future**.
 
 ---
 
 # 🚀 Core Features
 
-## 💸 Daily Safe Budget
+## 💰 Smart Daily Budget
 
-PocketFlow dynamically calculates your **safe spending limit** every single day.
+PocketFlow dynamically calculates a safe daily budget based on:
 
-No manual calculations.
+- Current Balance
+- Remaining Days
+- Weekly Spending Patterns
+- Safe Days
+- Recurring Bills
+- Financial Goals
+- Goal Priorities
 
 No spreadsheets.
 
-No guessing.
+No manual calculations.
 
-Simply open the app and instantly know your daily spending limit.
-
----
-
-## 🌊 FlowPath™
-
-PocketFlow's signature experience.
-
-Unlike traditional charts,
-
-FlowPath visualizes your financial momentum across the month.
-
-Every expense creates a subtle ripple.
-
-Every budget adjustment updates your trajectory.
-
-Every AI simulation projects your future.
-
-It's budgeting you can actually *feel*.
+Just open the app and know what you can safely spend.
 
 ---
 
 ## 📅 Weekly Planner
 
-PocketFlow understands that **not every day costs the same.**
+Life isn't the same every day.
 
-Instead of treating every day equally,
+PocketFlow understands that.
 
-PocketFlow lets you define your weekly lifestyle.
-
-Examples:
-
-| Day | Profile | Expected Spending |
-|------|----------|------------------:|
-| Monday | University | PKR 350 |
-| Tuesday | University | PKR 350 |
-| Wednesday | Internship | PKR 450 |
-| Thursday | Hostel | PKR 80 |
-| Friday | Safe Day | PKR 0 |
-| Saturday | Safe Day | PKR 0 |
-| Sunday | Safe Day | PKR 0 |
-
-Your budget automatically adapts.
-
----
-
-## 🟢 Safe Days
-
-PocketFlow introduces the concept of **Safe Days**.
-
-Days where you're unlikely to spend money.
+Assign custom profiles to every day of the week.
 
 Examples:
 
-- Hostel Days
-- Study Days
-- Work From Home
-- Home Days
+- 🎓 University Day
+- 💼 Internship Day
+- 🏠 Hostel Day
+- 🛌 Safe Day
+- ✈ Travel Day
+- 🛒 Shopping Day
 
-Safe Days automatically increase spending flexibility on your other days.
+Each profile has its own expected spending.
+
+PocketFlow automatically adjusts your daily budget around your routine.
 
 ---
 
-## 🔁 Recurring Budgets
+## 🎯 Mission Control
 
-Reserve money before you accidentally spend it.
+Your financial goals deserve their own command center.
+
+Mission Control lets you create and manage unlimited goals.
 
 Examples:
 
-- ⛽ Petrol
-- 📱 Mobile Package
-- 🎓 University
-- 🎬 Netflix
-- 💪 Gym
-- 🌐 Internet
+- 🛡 Emergency Fund
+- ✈ Ireland Trip
+- 💻 New Laptop
+- 🚗 First Car
+- 🏠 Apartment Deposit
+- 🎓 University Fees
 
-PocketFlow automatically accounts for recurring expenses before calculating your daily budget.
+Every goal includes:
 
----
-
-## ✨ AI Co-Pilot *(Coming Soon)*
-
-PocketFlow is designed around proactive financial guidance.
-
-Ask questions naturally:
-
-> Can I afford a burger today?
-
-> What happens if my salary is delayed?
-
-> What if petrol prices increase?
-
-> Should I wait until next week?
-
-PocketFlow simulates the outcome before you spend.
+- Progress tracking
+- Monthly contributions
+- Priority protection
+- Completion forecasts
+- Goal health
+- AI insights
 
 ---
 
-## 📈 Insights That Matter
+## 🛡 Goal Protection Engine
+
+Every rupee has a purpose.
+
+PocketFlow reserves money before calculating your daily spending.
+
+```
+Current Balance
+        ↓
+Goal Contributions
+        ↓
+Recurring Bills
+        ↓
+Spendable Balance
+        ↓
+Today's Budget
+```
+
+If your spending threatens a goal,
+
+PocketFlow won't silently reduce it.
+
+Instead, it explains the trade-off and lets **you** decide.
+
+---
+
+## 📈 FlowPath™
+
+PocketFlow's signature visualization.
+
+Instead of static charts,
+
+FlowPath shows your financial momentum across the month.
+
+- Expenses create downward movement
+- Goal contributions stabilize your path
+- Safe Days smooth the trajectory
+- AI simulations preview the future
+
+FlowPath transforms budgeting into something intuitive and visual.
+
+---
+
+## 🤖 PocketFlow AI *(Coming Soon)*
+
+Your financial co-pilot.
+
+Ask questions naturally.
+
+> Can I afford a Rs650 burger today?
+
+> What happens if I skip this month's laptop contribution?
+
+> Will buying this delay my Ireland trip?
+
+> Can I still reach my emergency fund?
+
+PocketFlow explains the consequences before you spend.
+
+---
+
+## 📊 Insights That Matter
 
 No meaningless pie charts.
 
-PocketFlow focuses on useful insights.
+PocketFlow focuses on decisions.
 
 Examples:
 
-- Average daily spending
-- Carry-forward history
-- Budget accuracy
-- Saving streaks
-- Projected month-end balance
-- Most expensive weekdays
-- AI recommendations
+- Spending Trends
+- Goal Progress
+- Savings Rate
+- Daily Budget Accuracy
+- Weekly Spending Patterns
+- Projected Month-End Balance
+- Goal Forecasts
+- Budget Carry-Forward
 
 ---
 
-# 🎯 Product Philosophy
-
-Traditional budgeting apps answer:
-
-> **Where did my money go?**
-
-PocketFlow answers:
-
-> **What should I do today?**
-
-Everything inside the app is built around this philosophy.
-
----
-
-# 🧠 What Makes PocketFlow Different?
+# 🌟 What Makes PocketFlow Different?
 
 | Traditional Budget Apps | PocketFlow |
 |--------------------------|------------|
-| Expense Tracking | Spending Decisions |
-| Charts | Daily Guidance |
+| Expense Tracking | Daily Decision Engine |
+| Static Budgets | Dynamic Daily Budgets |
 | Categories | Lifestyle Profiles |
-| Monthly Budgets | Dynamic Daily Budgets |
-| Historical Data | Future Predictions |
-| Manual Planning | Intelligent Recommendations |
+| Monthly Planning | Real-Time Planning |
+| Historical Reports | Future Projections |
+| Savings | Goal Protection |
+| Charts | Actionable Guidance |
+
+PocketFlow doesn't just record your finances.
+
+It actively helps you manage them.
 
 ---
 
-# 🏗 Tech Stack
+# 🧠 Budget Engine
 
-### Frontend
+PocketFlow is powered by a layered budgeting engine.
+
+```
+Income
+      ↓
+Current Balance
+      ↓
+Goal Contributions
+      ↓
+Recurring Bills
+      ↓
+Weekly Planner
+      ↓
+Daily Budget Engine
+      ↓
+Available Today
+```
+
+Every calculation has a purpose.
+
+Every recommendation is explainable.
+
+---
+
+# 🎯 Goal Priorities
+
+Goals aren't all equal.
+
+PocketFlow protects what matters most.
+
+| Priority | Examples |
+|-----------|----------|
+| 🛡 Protected | Emergency Fund, Medical, Tuition |
+| 🎯 Important | Travel, Laptop, Vehicle |
+| 📌 Planned | Gaming PC, Furniture |
+| ✨ Optional | Shoes, Coffee Machine |
+
+When money gets tight,
+
+PocketFlow protects higher-priority goals first.
+
+---
+
+# 💡 Product Philosophy
+
+PocketFlow is built around one simple question.
+
+> **"What can I safely spend today without hurting tomorrow?"**
+
+Everything inside the app supports answering that question.
+
+---
+
+# 🛣 Application Structure
+
+```
+🏠 Today
+📅 Weekly Planner
+💸 Expenses
+📋 Budgets
+🎯 Goals
+✨ AI Co-Pilot
+📈 Insights
+⚙ Settings
+```
+
+Every page has a single responsibility.
+
+No clutter.
+
+No unnecessary complexity.
+
+---
+
+# 🎨 Design Language
+
+PocketFlow follows a calm, premium design philosophy inspired by modern operating systems.
+
+Inspired by:
+
+- Apple
+- Linear
+- Vercel
+- Arc Browser
+- Nothing OS
+
+Design principles:
+
+- Minimal
+- Motion-first
+- Calm
+- Predictive
+- Glassmorphism
+- High information density
+- Accessible
+
+---
+
+# 🎬 Motion Philosophy
+
+Motion communicates information.
+
+It never exists just for decoration.
+
+Examples:
+
+- FlowPath animations
+- Goal progress transitions
+- Expense ripple effects
+- Smooth page transitions
+- AI thinking states
+- Interactive budget recalculations
+
+Every animation has meaning.
+
+---
+
+# ⚙ Tech Stack
+
+## Frontend
 
 - Next.js 14 (App Router)
 - React
 - TypeScript
 
-### UI
+## UI
 
 - Tailwind CSS
 - shadcn/ui
 - Lucide React
 - Framer Motion
 
-### State Management
+## State
 
 - Zustand
 
-### Storage
+## Storage
 
 - LocalStorage
-- IndexedDB *(planned)*
 
-### AI
+## AI
 
-- Google Gemini API *(planned)*
+- Google Gemini *(planned)*
 
-### Testing
+## Testing
 
 - Vitest
 
-### Deployment
+## Deployment
 
 - Vercel
 
 ---
 
-# 📂 Planned Pages
+# 🚀 Roadmap
 
-- 🏠 Today
-- 💸 Expenses
-- 📅 Weekly Planner
-- 📋 Budgets
-- ✨ AI Co-Pilot
-- 📈 Insights
-- ⚙ Settings
+## Version 1
 
----
-
-# 🌊 PocketFlow Design Language
-
-PocketFlow is intentionally designed to feel calm.
-
-Inspired by:
-
-- Apple
-- Linear
-- Arc Browser
-- Vercel
-- Nothing OS
-
-Design principles:
-
-- Minimal
-- Premium
-- Calm
-- Predictive
-- Motion-first
-- Accessibility-first
+- ✅ Dynamic Daily Budget
+- ✅ Weekly Planner
+- ✅ Expenses
+- ✅ Goal Management
+- ✅ Mission Control
+- ✅ Goal Protection
+- ✅ Modern Dashboard
 
 ---
 
-# 🎬 Motion Philosophy
+## Version 2
 
-PocketFlow uses motion to communicate information.
-
-Animations are never decorative.
-
-Examples:
-
-- FlowPath breathing animation
-- Expense ripple animation
-- Animated budget recalculation
-- Smooth page transitions
-- AI thinking animation
-- Interactive cards
-
-Every animation exists to improve understanding.
+- ⏳ AI Financial Advisor
+- ⏳ Purchase Simulator
+- ⏳ Goal Forecasting
+- ⏳ Spending Simulations
+- ⏳ Smart Notifications
+- ⏳ Natural Language Expense Entry
 
 ---
 
-# 🛣 Roadmap
+## Version 3
 
-### Version 1
-
-- [x] Dynamic Daily Budget
-- [x] Expense Tracking
-- [x] Weekly Planner
-- [x] Safe Days
-- [x] Recurring Budgets
-- [x] Modern Dashboard
-
-### Version 2
-
-- [ ] AI Co-Pilot
-- [ ] Purchase Advisor
-- [ ] Spending Predictions
-- [ ] Budget Simulations
-- [ ] Emergency Mode
-- [ ] Natural Language Expense Entry
-
-### Version 3
-
-- [ ] PWA
-- [ ] Notifications
-- [ ] Offline Sync
-- [ ] Multi-device Support
-- [ ] Mobile Apps
-- [ ] Bank Integrations
+- ⏳ Progressive Web App
+- ⏳ Offline Support
+- ⏳ Mobile Apps
+- ⏳ Multi-device Sync
+- ⏳ Bank Integrations
+- ⏳ Shared Family Budgets
 
 ---
 
-# ⚡ Local Development
+# 💻 Local Development
 
 ```bash
 git clone https://github.com/yourusername/pocketflow.git
@@ -347,26 +425,36 @@ http://localhost:3000
 
 ---
 
-# 💡 Vision
+# 🏗 Project Vision
 
 PocketFlow isn't trying to become another budgeting application.
 
-It's building a new way to think about personal finance.
+It's building a financial operating system.
 
-A world where your financial assistant doesn't just record your spending—
+One where:
 
-It helps you make better decisions before you spend.
+- Every rupee has a purpose.
+- Every purchase has visible consequences.
+- Every financial goal feels alive.
+- Every recommendation is transparent.
+- Every decision becomes easier.
+
+PocketFlow doesn't tell you where your money went.
+
+It helps you decide where it should go.
 
 ---
 
 <div align="center">
 
-## PocketFlow
+# PocketFlow
 
 ### **The co-pilot for your wallet.**
 
-**Know today's limit. Spend with confidence.**
+**Spend intentionally. Save confidently. Reach your goals.**
 
-Made with ❤️ using Next.js & TypeScript
+---
+
+⭐ If you like this project, consider giving it a star.
 
 </div>
