@@ -1,25 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
+import { PocketFlowLoader } from "@/components/PocketFlowLoader";
 
 export default function RootPage() {
   const router = useRouter();
   const { user } = useUserStore();
+  const [animDone, setAnimDone] = useState(false);
 
   useEffect(() => {
-    // We delay slightly to ensure hydration is complete and we don't get mismatch errors
-    if (user?.isOnboarded) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/welcome");
+    if (animDone) {
+      if (user?.isOnboarded) {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/welcome");
+      }
     }
-  }, [user, router]);
+  }, [user, router, animDone]);
 
-  return (
-    <main className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-pulse w-32 h-32 rounded-full bg-primary/10" />
-    </main>
-  );
+  return <PocketFlowLoader onComplete={() => setAnimDone(true)} />;
 }
+
