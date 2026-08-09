@@ -229,7 +229,10 @@ export default function DashboardPage() {
           <h2 className="text-xl md:text-2xl font-light tracking-tight text-foreground/80">
             {greeting()}, {user.name}
           </h2>
-          <div className="flex items-center gap-3">
+          <p className="text-xs text-muted-foreground/60 tracking-wide font-normal">
+            Your financial co-pilot is ready. Know what you can safely spend today.
+          </p>
+          <div className="flex items-center gap-3 pt-1">
             <p className="text-sm font-medium tracking-widest text-muted-foreground uppercase">
               {format(new Date(), "EEEE • d MMMM")}
             </p>
