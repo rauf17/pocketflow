@@ -5,6 +5,7 @@
 > A personal financial operating system built around one fundamental question:  
 > **What can I safely spend today without hurting tomorrow?**
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-getpocketflow.vercel.app-10B981?style=for-the-badge&logo=vercel&logoColor=white)](https://getpocketflow.vercel.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
