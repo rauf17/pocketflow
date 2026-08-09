@@ -2,12 +2,33 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Calendar } from "lucide-react";
+import { format, subDays, set as setDateParts } from "date-fns";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getCurrencySymbol } from "@/lib/utils";
+
+const DATE_FMT = "yyyy-MM-dd";
+const todayStr = () => format(new Date(), DATE_FMT);
+const yesterdayStr = () => format(subDays(new Date(), 1), DATE_FMT);
+
+// new Date("yyyy-MM-dd") parses as UTC, which can roll the displayed day
+// backward in negative-UTC-offset timezones. Parse as a local calendar
+// date instead so the label always matches what was picked.
+function parseLocalYMD(ymd: string): Date {
+  const [year, month, day] = ymd.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+// Combine the picked calendar day with the current time-of-day, so a
+// backdated expense still sorts/displays sensibly without ever landing
+// on a future instant.
+function toExpenseDate(pickedYMD: string): string {
+  const [year, month, day] = pickedYMD.split("-").map(Number);
+  return setDateParts(new Date(), { year, month: month - 1, date: day }).toISOString();
+}
 
 export function ExpenseInput() {
   const { addExpense } = useExpenseStore();
@@ -15,13 +36,20 @@ export function ExpenseInput() {
   const [isOpen, setIsOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [date, setDate] = useState(todayStr());
   const [isSuccess, setIsSuccess] = useState(false);
   const [mounted, setMounted] = useState(false);
-  
+
   const currencySymbol = getCurrencySymbol(user?.currency);
   const controls = useAnimation();
 
   useEffect(() => setMounted(true), []);
+
+  // The date must NEVER be remembered between visits — every time the
+  // sheet opens, it defaults back to today.
+  useEffect(() => {
+    if (isOpen) setDate(todayStr());
+  }, [isOpen]);
 
   // Keyboard shortcut (cmd+k or something similar could be added here)
   useEffect(() => {
@@ -33,6 +61,10 @@ export function ExpenseInput() {
   }, [isOpen]);
 
   if (!mounted) return null;
+
+  const isToday = date === todayStr();
+  const isYesterday = date === yesterdayStr();
+  const isCustomDate = !isToday && !isYesterday;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +84,7 @@ export function ExpenseInput() {
       addExpense({
         amount: Number(amount),
         description: description || "Expense",
-        date: new Date().toISOString()
+        date: toExpenseDate(date)
       });
       updateBalance(-Number(amount));
       setAmount("");
@@ -160,6 +192,63 @@ export function ExpenseInput() {
                     className="pl-14 text-5xl font-light h-24 rounded-[2rem] placeholder:text-muted-foreground/20 border-white/5 bg-white/[0.02] focus-visible:bg-white/[0.05] focus-visible:ring-1 focus-visible:ring-white/20 transition-all"
                   />
                 </motion.div>
+
+                {/* Date selection */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDate(todayStr())}
+                      className={`px-4 h-10 rounded-full text-sm font-medium transition-all ${
+                        isToday
+                          ? "bg-foreground text-background"
+                          : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDate(yesterdayStr())}
+                      className={`px-4 h-10 rounded-full text-sm font-medium transition-all ${
+                        isYesterday
+                          ? "bg-foreground text-background"
+                          : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+                      }`}
+                    >
+                      Yesterday
+                    </button>
+                    <div
+                      className={`flex items-center gap-1.5 h-10 pl-3 pr-2 rounded-full transition-all ${
+                        isCustomDate
+                          ? "bg-foreground text-background"
+                          : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5 shrink-0 pointer-events-none" />
+                      <input
+                        type="date"
+                        value={date}
+                        max={todayStr()}
+                        onChange={(e) => e.target.value && setDate(e.target.value)}
+                        className="bg-transparent border-0 outline-none text-sm font-medium w-[112px] cursor-pointer"
+                        aria-label="Pick an earlier date"
+                      />
+                    </div>
+                  </div>
+                  <AnimatePresence>
+                    {!isToday && (
+                      <motion.p
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="text-xs text-muted-foreground pl-1"
+                      >
+                        Recording expense for {format(parseLocalYMD(date), "MMM d")}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
                 
                 <div className="relative">
                   <Input
