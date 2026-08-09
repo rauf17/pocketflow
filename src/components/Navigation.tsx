@@ -112,7 +112,10 @@ export function Sidebar() {
       >
         <div className="flex items-center gap-4 cursor-help px-2">
           <PocketFlowLogo className="w-9 h-9" isHovered={isLogoHovered} />
-          <h1 className="text-xl font-medium tracking-tight text-foreground/90">PocketFlow</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-medium tracking-tight text-foreground/90 leading-none">PocketFlow</h1>
+            <span className="text-[10px] text-muted-foreground/60 tracking-tight mt-1">The co-pilot for your wallet.</span>
+          </div>
         </div>
         
         <AnimatePresence>
