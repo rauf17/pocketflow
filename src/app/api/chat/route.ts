@@ -4,22 +4,33 @@ import { GoogleGenAI } from '@google/genai';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_INSTRUCTION = `
-You are the PocketFlow AI Advisor — a calm, analytical, and highly intelligent financial operating system.
-Your role is to answer the question: "Can I afford this today?" while protecting the user's financial goals.
+You are PocketFlow AI — a precise financial co-pilot. Your job is to interpret pre-calculated financial data and return a structured decision.
 
-You will receive a JSON snapshot of the user's finances including:
-- balance, income, recent expenses
-- goals[] — each goal has: name, priority (critical/important/planned/nice-to-have), status (on-track/behind/at-risk), targetAmount, currentSaved, monthlyContribution
-- weeklyPlan and dayProfiles
+The user's financial context is already fully computed by PocketFlow's deterministic budget engine. You do NOT need to recalculate any numbers — they are given to you in the context snapshot. Your job is to interpret them and provide a concise, human-readable decision.
 
-Rules:
-1. ALWAYS reference specific goals by name when evaluating purchases.
-2. ALWAYS state the impact on each affected goal. Example: "Your Ireland Trip will be delayed by approximately 12 days."
-3. NEVER answer using only balance. Goals are the primary lens.
-4. Higher-priority goals (critical) should always be protected first.
-5. If a purchase puts a critical goal at risk, warn the user explicitly.
-6. Be direct and brief — maximum 4 sentences. No filler phrases.
-7. End every response with one concrete suggestion if the answer is negative.
+RESPONSE FORMAT:
+You MUST respond with valid JSON only. No markdown fences. No extra text outside the JSON object.
+
+{
+  "verdict": "positive" | "negative" | "neutral",
+  "assessment": "<One direct sentence answering the question. Start with an emoji: ✅ for positive, ⚠️ for caution, ❌ for negative>",
+  "metrics": [
+    { "label": "<short label>", "value": "<formatted value with currency symbol if applicable>" }
+  ],
+  "recommendation": "<One concise, actionable sentence>",
+  "context": "<Optional: one additional sentence of relevant context, or null if not needed>"
+}
+
+RULES:
+- "assessment": 1 sentence max. Direct answer first. Use emojis ✅ ⚠️ ❌.
+- "metrics": 3–5 of the MOST RELEVANT numbers to the question. Use the pre-calculated values from the context snapshot — never invent numbers.
+- "recommendation": 1 sentence. Specific and actionable (e.g. a specific amount or action).
+- "context": null unless it materially adds to the answer. Never repeat metrics already shown.
+- "verdict": "positive" = user can proceed comfortably, "negative" = user should not or it's risky, "neutral" = it depends / borderline.
+- Keep the total word count between 40–100 words across all fields.
+- Goals are OPTIONAL context. If goals[] is empty, reason from balance, todayBudget, todayRemaining, and daysUntilIncome only.
+- Never say "I can't answer" or "please create a goal". Always provide a useful answer.
+- Use the currency symbol from the context (e.g. "Rs" for PKR).
 `;
 
 export async function POST(req: NextRequest) {
@@ -33,36 +44,60 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Combine history for context (default to empty if missing)
     const chatHistory = (history || []).map((msg: { role: string; content: string }) => ({
       role: msg.role === 'ai' ? 'model' : 'user',
       parts: [{ text: msg.content }],
     }));
 
-    // Inject system instructions and financial context into the user's message
     const augmentedMessage = `
 [FINANCIAL CONTEXT SNAPSHOT]
 ${JSON.stringify(context, null, 2)}
 [/FINANCIAL CONTEXT SNAPSHOT]
 
-User Request: ${message}
+User Question: ${message}
+
+Respond with valid JSON only.
 `;
 
-    // Actually, passing history is supported in ai.chats.create({ history: chatHistory })
     const chatWithHistory = ai.chats.create({
       model: 'gemini-2.5-flash',
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.3,
+        temperature: 0.2,
       },
       history: chatHistory,
     });
 
-    const response = await chatWithHistory.sendMessage({
-      message: augmentedMessage
-    });
+    const response = await chatWithHistory.sendMessage({ message: augmentedMessage });
 
-    return NextResponse.json({ response: response.text });
+    // Parse structured JSON response
+    let parsed: {
+      verdict: 'positive' | 'negative' | 'neutral';
+      assessment: string;
+      metrics: { label: string; value: string }[];
+      recommendation: string;
+      context: string | null;
+    } | null = null;
+
+    try {
+      const rawText = response.text ?? '';
+      // Strip any accidental markdown fences
+      const cleaned = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      // Fallback: return raw text as a neutral response
+      return NextResponse.json({
+        response: {
+          verdict: 'neutral',
+          assessment: response.text ?? 'Unable to parse response.',
+          metrics: [],
+          recommendation: '',
+          context: null,
+        }
+      });
+    }
+
+    return NextResponse.json({ response: parsed });
   } catch (error: unknown) {
     console.error('Chat API Error:', error);
     return NextResponse.json(

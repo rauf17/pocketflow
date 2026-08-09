@@ -135,19 +135,28 @@ export function Sidebar() {
       {user && (
         <div className="mt-auto pt-8">
           <div className="p-4 rounded-[1.5rem] bg-card/30 border border-white/[0.03] backdrop-blur-md">
-            <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Today&apos;s Budget</h4>
+            <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">Remaining Today</h4>
             <div className="flex items-center gap-3 mb-2">
               <div className={`p-1.5 rounded-lg ${isOverBudget ? 'bg-flow-amber/10' : 'bg-flow-emerald/10'}`}>
                 <Wallet className={`w-3 h-3 ${isOverBudget ? 'text-flow-amber' : 'text-flow-emerald'}`} />
               </div>
-              <span className={`text-xl font-light ${isOverBudget ? 'text-flow-amber' : 'text-foreground'}`}>
-                {remaining < 0 ? "-" : ""}{currencySymbol}{Math.abs(remaining).toFixed(0)}
+              <span className={`text-xl font-light ${isOverBudget ? 'text-muted-foreground' : 'text-foreground'}`}>
+                {currencySymbol}{Math.max(0, remaining).toFixed(0)}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 mt-2">
-              <div className={`w-1.5 h-1.5 rounded-full ${isOverBudget ? 'bg-flow-amber' : 'bg-flow-emerald'}`} />
-              <span className="text-xs text-muted-foreground">{isOverBudget ? 'Over Budget' : 'On Track'}</span>
-            </div>
+            {isOverBudget ? (
+              <div className="flex items-center gap-1.5 mt-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-flow-amber" />
+                <span className="text-xs text-flow-amber font-medium">
+                  {currencySymbol}{Math.abs(remaining).toFixed(0)} over budget
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 mt-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-flow-emerald" />
+                <span className="text-xs text-muted-foreground">On Track</span>
+              </div>
+            )}
           </div>
         </div>
       )}

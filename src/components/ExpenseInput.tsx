@@ -65,14 +65,24 @@ export function ExpenseInput() {
   return (
     <>
       {/* Floating Action Button */}
-      <motion.div 
+      <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.5 }}
-        className="fixed bottom-24 right-6 md:bottom-12 md:right-12 z-50"
+        className="fixed bottom-24 right-6 md:bottom-12 md:right-12 z-50 flex items-center gap-3 group/fab"
       >
+        {/* Hover label */}
+        <motion.span
+          initial={{ opacity: 0, x: 8 }}
+          whileHover={{ opacity: 1, x: 0 }}
+          className="hidden md:block text-xs font-medium text-muted-foreground bg-card/60 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-full opacity-0 group-hover/fab:opacity-100 transition-all pointer-events-none select-none"
+        >
+          Add Expense
+        </motion.span>
         <Button
           onClick={() => setIsOpen(true)}
+          title="Add Expense"
+          aria-label="Add Expense"
           className="w-16 h-16 rounded-full bg-foreground text-background shadow-2xl hover:scale-105 transition-transform"
         >
           <Plus className="w-8 h-8" />
