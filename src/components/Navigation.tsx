@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Receipt, PieChart, Settings, Brain, Clock, Map, Wallet, Target } from "lucide-react";
+import { Home, Receipt, PieChart, Settings, Brain, Clock, Map, Wallet, Target, MoreHorizontal, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PocketFlowLogo } from "./PocketFlowLogo";
 import { useUserStore } from "@/store/useUserStore";
@@ -138,10 +138,8 @@ export function Sidebar() {
                   <span className="text-xs text-muted-foreground">Flow & Trajectory</span>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-flow-emerald" />
-                  </div>
-                  <span className="text-xs text-muted-foreground">Guidance Co-pilot</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-flow-emerald ml-2.5 mr-2" />
+                  <span className="text-xs text-muted-foreground">Current Position</span>
                 </div>
               </div>
             </motion.div>
@@ -219,36 +217,119 @@ export function Sidebar() {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   
-  // Show 5 essential items on mobile: Dashboard, Planner, Goals, Advisor, Settings
-  const mobileItems = [navItems[0], navItems[1], navItems[4], navItems[6], navItems[7]];
+  // Primary 4 items + "More" toggle for mobile
+  const primaryMobileItems = [navItems[0], navItems[1], navItems[4], navItems[6]]; // Dashboard, Planner, Goals, Advisor
+  const overflowItems = [navItems[2], navItems[3], navItems[5], navItems[7]];      // Expenses, Budgets, Analytics, Settings
+
+  const isOverflowActive = overflowItems.some((item) => pathname.startsWith(item.href));
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 w-full bg-background/80 backdrop-blur-3xl border-t border-white/[0.03] pb-safe z-40">
-      <div className="flex items-center justify-around p-2">
-        {mobileItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
-          return (
-            <Link 
-              key={item.name} 
-              href={item.href}
-              className={`flex flex-col items-center justify-center p-3 relative w-16 h-16 ${
-                isActive ? "text-foreground" : "text-muted-foreground"
-              }`}
+    <>
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-background/80 backdrop-blur-3xl border-t border-white/[0.03] pb-safe z-40">
+        <div className="flex items-center justify-around p-2">
+          {primaryMobileItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <Link 
+                key={item.name} 
+                href={item.href}
+                className={`flex flex-col items-center justify-center p-3 relative w-16 h-16 ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                <item.icon className="w-6 h-6 z-10 mb-1" strokeWidth={isActive ? 2.5 : 2} />
+                <span className="text-[10px] font-medium tracking-wide z-10">{item.name}</span>
+                {isActive && (
+                  <motion.div 
+                    layoutId="bottomnav-active"
+                    className="absolute inset-2 bg-white/[0.04] rounded-2xl -z-0 border border-white/[0.05]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+
+          {/* More Menu Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setIsMoreOpen(!isMoreOpen)}
+            aria-label="More navigation links"
+            className={`flex flex-col items-center justify-center p-3 relative w-16 h-16 ${
+              isOverflowActive || isMoreOpen ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            <MoreHorizontal className="w-6 h-6 z-10 mb-1" strokeWidth={isOverflowActive || isMoreOpen ? 2.5 : 2} />
+            <span className="text-[10px] font-medium tracking-wide z-10">More</span>
+            {(isOverflowActive || isMoreOpen) && (
+              <motion.div 
+                layoutId="bottomnav-active"
+                className="absolute inset-2 bg-white/[0.04] rounded-2xl -z-0 border border-white/[0.05]"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+          </button>
+        </div>
+      </nav>
+
+      {/* Overflow Navigation Menu Sheet */}
+      <AnimatePresence>
+        {isMoreOpen && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center pointer-events-auto md:hidden">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMoreOpen(false)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-xl"
+            />
+
+            {/* Menu Drawer */}
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="w-full bg-card/90 backdrop-blur-3xl border-t border-white/10 rounded-t-[2.5rem] p-6 shadow-2xl relative z-10 flex flex-col pb-12"
             >
-              <item.icon className="w-6 h-6 z-10 mb-1" strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[10px] font-medium tracking-wide z-10">{item.name}</span>
-              {isActive && (
-                <motion.div 
-                  layoutId="bottomnav-active"
-                  className="absolute inset-2 bg-white/[0.04] rounded-2xl -z-0 border border-white/[0.05]"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+              <div className="flex justify-between items-center mb-6 px-2">
+                <h3 className="text-lg font-light tracking-tight text-foreground/90">Navigation</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsMoreOpen(false)}
+                  className="rounded-full w-9 h-9 bg-white/5 flex items-center justify-center hover:bg-white/10"
+                >
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {overflowItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setIsMoreOpen(false)}
+                      className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+                        isActive
+                          ? "bg-white/10 border-white/20 text-foreground font-medium"
+                          : "bg-white/[0.02] border-white/5 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
