@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
+import { PocketFlowLoader } from "./PocketFlowLoader";
 
 export function Gatekeeper({ children }: { children: React.ReactNode }) {
   const { user } = useUserStore();
   const router = useRouter();
   const pathname = usePathname();
   const [isReady, setIsReady] = useState(false);
+  const [animDone, setAnimDone] = useState(false);
 
   useEffect(() => {
     // Only run on client
@@ -35,13 +37,10 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
     }
   }, [user?.theme]);
 
-  if (!isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse w-32 h-32 rounded-full bg-primary/10" />
-      </div>
-    );
+  if (!isReady || !animDone) {
+    return <PocketFlowLoader onComplete={() => setAnimDone(true)} />;
   }
 
   return <>{children}</>;
 }
+
