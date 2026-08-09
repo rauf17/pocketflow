@@ -17,13 +17,13 @@
 
 Traditional budgeting apps focus backward on historical tracking—telling users where their money *went*. PocketFlow shifts the paradigm to **prospective decision-making**.
 
-PocketFlow is a local-first, intelligence-assisted budgeting operating system. Rather than treating a bank balance as a single bucket to deplete, PocketFlow automatically reserves money for upcoming recurring obligations and protected long-term financial goals *before* calculating daily spending limits. It dynamically weighs day profiles, accommodates safe low-spend days, and redistributes surpluses smoothly across your planning horizon.
+PocketFlow is a local-first, intelligence-assisted budgeting operating system. Rather than treating a bank balance as a single bucket to deplete, PocketFlow ensures **every rupee has a purpose**. It automatically reserves money for upcoming recurring obligations and protected long-term financial goals *before* calculating daily spending limits. It dynamically weighs day profiles, accommodates safe low-spend days, and redistributes surpluses smoothly across your planning horizon.
 
 ---
 
 ## 🏛 Core Financial Engine Architecture
 
-PocketFlow enforces a protected, deterministic multi-layered financial pipeline. Every dollar is categorized and protected before daily safe limits are calculated:
+PocketFlow enforces a protected, deterministic multi-layered financial pipeline. Every rupee is categorized and protected before daily safe limits are calculated:
 
 ```
                   ┌──────────────────────────────┐
@@ -32,12 +32,12 @@ PocketFlow enforces a protected, deterministic multi-layered financial pipeline.
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │    RESERVED RECURRING BILLS  │
+                  │       RECURRING BILLS        │
                   └──────────────┬───────────────┘
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │    PROTECTED GOAL RESERVES   │
+                  │       PROTECTED GOALS        │
                   └──────────────┬───────────────┘
                                  │
                                  ▼
@@ -47,7 +47,7 @@ PocketFlow enforces a protected, deterministic multi-layered financial pipeline.
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │     DAY PROFILE WEIGHTING    │
+                  │         DAY PROFILES         │
                   └──────────────┬───────────────┘
                                  │
                                  ▼
@@ -57,7 +57,7 @@ PocketFlow enforces a protected, deterministic multi-layered financial pipeline.
                                  │
                                  ▼
                   ┌──────────────────────────────┐
-                  │    TODAY'S ACTUAL SPEND      │
+                  │        SPENT TODAY           │
                   └──────────────┬───────────────┘
                                  │
                                  ▼
@@ -68,13 +68,10 @@ PocketFlow enforces a protected, deterministic multi-layered financial pipeline.
 
 ### The 4-Layer Calculation Model
 
-1. **Obligation Protection**: Upcoming recurring bills due before or on the next payday are isolated first.
-2. **Goal Protection**: Monthly target contributions for active goals are subtracted next in priority order (`Critical` → `Important` → `Planned` → `Nice-to-Have`).
-3. **Day Profile Allocation**: Remaining `Spendable Balance` is distributed across the remaining planning horizon. Days configured with custom weightings (e.g. *University Day*, *Hostel Day*, *Shopping Day*) set base expectations.
-4. **Surplus & Deficit Smoothing**: 
-   - **Surplus**: Unallocated balance above expected spend is distributed as an additive daily bonus.
-   - **Deficit**: Constrained balance scales daily baselines down proportionally so allocations never exceed true spendable funds.
-   - **Carry-Forward**: Unspent funds from today automatically increase tomorrow's daily allowance.
+1. **Recurring Bills**: Upcoming recurring bills due before or on the next payday are isolated first.
+2. **Protected Goals**: Target contributions for active goals are subtracted next in priority order (`Critical` → `Important` → `Planned` → `Nice-to-Have`).
+3. **Day Profiles**: Remaining `Spendable Balance` is distributed across the remaining planning horizon according to configured profile weightings (e.g. *University Day*, *Hostel Day*, *Shopping Day*).
+4. **Today's Safe Limit**: The resulting daily limit representing what the user can safely spend today. Unspent funds automatically adjust **Tomorrow's Allowance**.
 
 ---
 
@@ -92,7 +89,7 @@ PocketFlow organizes personal finance into four integrated operational pillars:
 * **Mission Control (`/goals`)**: Comprehensive financial goal hub.
 * **Goal Priority System**: High-priority goals (`Critical`) receive protection before lower-tier objectives when funds become constrained.
 * **Monthly Savings Goals**: Define fixed savings targets or percentage-based income protections.
-* **Safety Floor Alerts**: Automatic UI state transition (*"SAFETY LIMIT REACHED"*) when further spending would compromise protected savings.
+* **Safety Limit Reached**: Automatic UI state transition when further spending would compromise protected savings.
 
 ### 3. 🧠 Decide
 * **Today's Safe Limit**: The single authoritative planned ceiling for today's spend.
@@ -288,29 +285,28 @@ npm run build
 
 ---
 
-## 🗺 Product Roadmap
+## 🚀 Current Status
 
-### Implemented (MVP)
-- [x] Protected 4-layer budgeting engine
-- [x] Dynamic daily safe spending limit
-- [x] Day profile weighting & weekly schedule planner
-- [x] Safe day allocations
-- [x] Recurring bill reservations
-- [x] Historical expense backfilling & editing
-- [x] Priority-ordered Goal Protection in Mission Control
-- [x] Structured JSON AI Co-Pilot (Gemini 2.5 Flash)
-- [x] Interactive LivingFlow trajectory with day node tooltips
-- [x] Local-first Zustand persistence
+PocketFlow is an actively developed functional MVP. The core financial operating system is implemented and operational, featuring:
 
-### Planned (Future Versions)
-- [ ] Multi-currency conversion support
-- [ ] Automated bank transaction imports (Open Banking API)
-- [ ] Progressive Web App (PWA) offline installation
-- [ ] Cloud sync & multi-device end-to-end encryption
-- [ ] Custom category budget limits
+- Dynamic Daily Budget calculation engine
+- Day Profiles & Weekly Schedule Planner
+- Safe Days allocation algorithm
+- Recurring Bills / Budgets isolation
+- Expense Tracking & Historical Backfilling
+- Goal Protection & Priority Engine
+- Monthly Savings Goals
+- Mission Control (`/goals`)
+- Financial Analytics & Trend Visualizations
+- AI Co-Pilot (`/advisor`) powered by Gemini 2.5 Flash
+- LivingFlow Trajectory visualization
+- Local-first Zustand persistence
+- Responsive desktop & mobile interface
+
+Future capabilities and feature enhancements may evolve as PocketFlow develops.
 
 ---
 
 ## 📄 License
 
-This project is open-source. Licensing details will be updated under standard open-source terms.
+License information has not yet been added to this repository.
