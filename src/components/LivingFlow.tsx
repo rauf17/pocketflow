@@ -4,7 +4,10 @@ import { motion, useAnimation } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useUserStore } from "@/store/useUserStore";
 import { useExpenseStore } from "@/store/useExpenseStore";
-import { startOfDay, differenceInDays } from "date-fns";
+import { useBudgetStore } from "@/store/useBudgetStore";
+import { useProfileStore } from "@/store/useProfileStore";
+import { useGoalStore, totalGoalContributions, sortGoalsByPriority } from "@/store/useGoalStore";
+import { startOfDay, differenceInDays, isBefore, isEqual, addDays } from "date-fns";
 
 // ─── DayNode type (exported so dashboard can build trajectory) ────────────────
 export interface DayNode {
@@ -139,21 +142,64 @@ export function LivingFlow({
   const rippleControls = useAnimation();
   const prevExpensesLength = useRef(expenses.length);
 
-  const getSafeSpendingLimit = () => {
-    if (!user || !income) return 0;
+  const getRemainingBudgetToday = () => {
+    if (!user || !income) return { limit: 0, remaining: 0, isOverBudget: false };
     const today = startOfDay(new Date());
     const incomeDate = startOfDay(new Date(income.nextDate));
-    const days = Math.max(0, differenceInDays(incomeDate, today));
-    return days === 0 ? user.balance : user.balance / days;
-  };
+    let daysUntilIncome = differenceInDays(incomeDate, today);
+    if (daysUntilIncome < 0) daysUntilIncome = 0;
 
-  const getRemainingBudgetToday = () => {
-    const limit = getSafeSpendingLimit();
-    const today = startOfDay(new Date());
+    const upcomingBillsTotal = (useBudgetStore.getState().recurringBudgets || []).reduce((sum, b) => {
+      const billDate = startOfDay(new Date(b.nextDueDate));
+      return (isBefore(billDate, incomeDate) || isEqual(billDate, incomeDate)) ? sum + b.amount : sum;
+    }, 0);
+
+    const activeGoals = sortGoalsByPriority((useGoalStore.getState().goals || []).filter(g => g.status !== 'completed'));
+    const goalsReservedTotal = totalGoalContributions(activeGoals);
+
+    const spendableBalance = Math.max(0, user.balance - upcomingBillsTotal - goalsReservedTotal);
+    const goalsProtectedMode = user.balance - upcomingBillsTotal - goalsReservedTotal <= 0;
+
+    const profiles = useProfileStore.getState().profiles;
+    const weeklyPlan = useProfileStore.getState().weeklyPlan;
+
+    let totalExpectedSpend = 0;
+    let nonSafeDaysCount = 0;
+
+    for (let i = 0; i < daysUntilIncome; i++) {
+      const date = addDays(today, i);
+      const profileId = weeklyPlan[date.getDay()];
+      const profile = profiles.find(p => p.id === profileId) || profiles[0];
+      if (profile) {
+        totalExpectedSpend += profile.expectedSpend;
+        if (profile.type !== 'safe' && profile.expectedSpend > 0) nonSafeDaysCount++;
+      }
+    }
+
+    const todayProfileId = weeklyPlan[today.getDay()];
+    const todayProfile = profiles.find(p => p.id === todayProfileId) || profiles[0];
+
+    let safeLimit = 0;
+    const surplus = spendableBalance - totalExpectedSpend;
+
+    if (goalsProtectedMode || todayProfile?.expectedSpend === 0) {
+      safeLimit = 0;
+    } else if (daysUntilIncome === 0) {
+      safeLimit = spendableBalance;
+    } else if (surplus >= 0) {
+      const extraPerDay = nonSafeDaysCount > 0 ? surplus / nonSafeDaysCount : 0;
+      safeLimit = (todayProfile?.expectedSpend || 0) + extraPerDay;
+    } else {
+      const scalingFactor = totalExpectedSpend > 0 ? spendableBalance / totalExpectedSpend : 1;
+      safeLimit = (todayProfile?.expectedSpend || 0) * scalingFactor;
+    }
+
     const spentToday = expenses
       .filter(e => startOfDay(new Date(e.date)).getTime() === today.getTime())
       .reduce((sum, e) => sum + e.amount, 0);
-    return limit - spentToday;
+
+    const remaining = safeLimit - spentToday;
+    return { limit: safeLimit, remaining, isOverBudget: remaining < 0 };
   };
 
   useEffect(() => { setMounted(true); }, []);
@@ -172,10 +218,8 @@ export function LivingFlow({
 
   if (!mounted) return <div className="h-32 w-full" />;
 
-  const remaining = getRemainingBudgetToday();
-  const limit = getSafeSpendingLimit();
+  const { limit, remaining, isOverBudget } = getRemainingBudgetToday();
   const ratio = limit > 0 ? remaining / limit : 0;
-  const isOverBudget = remaining < 0;
 
   const color = isOverBudget ? "text-flow-amber" : "text-flow-emerald";
 
