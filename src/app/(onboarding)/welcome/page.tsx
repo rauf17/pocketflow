@@ -27,9 +27,15 @@ export default function WelcomePage() {
     {
       id: "welcome",
       title: "Welcome to PocketFlow",
-      description: "The financial OS that answers: Can I afford this today?",
+      description: "The co-pilot for your wallet.",
       icon: <Wallet className="w-12 h-12 text-flow-emerald mb-6" />,
-      content: null,
+      content: (
+        <div className="flex flex-col items-center text-center mt-6">
+          <p className="text-xs text-muted-foreground/70 tracking-wide font-medium">
+            Know today&apos;s limit. Protect tomorrow&apos;s goals.
+          </p>
+        </div>
+      ),
       isValid: () => true,
     },
     {
