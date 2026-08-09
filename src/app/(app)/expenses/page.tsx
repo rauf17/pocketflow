@@ -3,19 +3,28 @@
 import { useState } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { format, isToday, isYesterday } from "date-fns";
-import { Search, Trash2, Receipt } from "lucide-react";
+import { Search, Trash2, Receipt, Pencil } from "lucide-react";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useUserStore } from "@/store/useUserStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EditExpenseDialog } from "@/components/EditExpenseDialog";
 import { getCurrencySymbol } from "@/lib/utils";
+import type { Expense } from "@/store/types";
 
 export default function ExpensesPage() {
   const { expenses, removeExpense } = useExpenseStore();
-  const { user } = useUserStore();
+  const { user, updateBalance } = useUserStore();
   const currencySymbol = getCurrencySymbol(user?.currency);
   
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+
+  // Deleting an expense must give the money back — it isn't spent anymore.
+  const handleDelete = (expense: Expense) => {
+    updateBalance(expense.amount);
+    removeExpense(expense.id);
+  };
 
   // Filter expenses
   const filteredExpenses = expenses.filter(e => 
@@ -119,14 +128,24 @@ export default function ExpensesPage() {
                             {currencySymbol}{expense.amount.toFixed(2)}
                           </span>
                           
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeExpense(expense.id)}
-                            className="text-destructive/50 hover:text-destructive hover:bg-destructive/10 rounded-xl opacity-0 group-hover:opacity-100 transition-all w-10 h-10"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => setEditingExpense(expense)}
+                              className="text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl w-10 h-10"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(expense)}
+                              className="text-destructive/50 hover:text-destructive hover:bg-destructive/10 rounded-xl w-10 h-10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -137,6 +156,8 @@ export default function ExpensesPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <EditExpenseDialog expense={editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)} />
     </div>
   );
 }
