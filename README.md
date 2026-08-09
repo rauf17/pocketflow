@@ -23,7 +23,7 @@ PocketFlow is a local-first, intelligence-assisted budgeting operating system. R
 
 ## 🏛 Core Financial Engine Architecture
 
-PocketFlow enforces a protected, deterministic multi-layered financial pipeline. Every rupee is categorized and protected before daily safe limits are calculated:
+PocketFlow enforces a protected, deterministic multi-layered financial pipeline. PocketFlow allocates available funds across protected financial commitments before calculating daily safe limits:
 
 ```
                   ┌──────────────────────────────┐
@@ -66,7 +66,7 @@ PocketFlow enforces a protected, deterministic multi-layered financial pipeline.
                   └──────────────────────────────┘
 ```
 
-### The 4-Layer Calculation Model
+### How the Budget Engine Works
 
 1. **Recurring Bills**: Upcoming recurring bills due before or on the next payday are isolated first.
 2. **Protected Goals**: Target contributions for active goals are subtracted next in priority order (`Critical` → `Important` → `Planned` → `Nice-to-Have`).
@@ -172,7 +172,7 @@ PocketFlow is built with a **local-first privacy architecture**:
 
 | Layer | Technology |
 |---|---|
-| **Framework** | [Next.js 14](https://nextjs.org/) (App Router, Server Actions) |
+| **Framework** | [Next.js 14](https://nextjs.org/) (App Router) |
 | **Language** | [TypeScript 5](https://www.typescriptlang.org/) |
 | **Styling** | [Tailwind CSS v3](https://tailwindcss.com/) & [shadcn/ui](https://ui.shadcn.com/) |
 | **Icons & Motion** | [Lucide React](https://lucide.dev/) & [Framer Motion](https://www.framer.com/motion/) |
