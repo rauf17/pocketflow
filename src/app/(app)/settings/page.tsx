@@ -6,8 +6,9 @@ import { useUserStore } from "@/store/useUserStore";
 import { useProfileStore } from "@/store/useProfileStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Smartphone, Moon, Sun, Trash2, Download, CheckCircle2, Wallet, Shield, Settings2, Map, Plus, Edit2, Check } from "lucide-react";
+import { Smartphone, Moon, Sun, Trash2, Download, CheckCircle2, Wallet, Shield, Settings2, Map, Plus, Edit2, Check, AlertCircle } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/utils";
+import { exportPocketFlowCSV } from "@/lib/exportCSV";
 
 export default function SettingsPage() {
   const { user, income, setUser, setIncome } = useUserStore();
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const [editProfileSpend, setEditProfileSpend] = useState("");
 
   const [isSaved, setIsSaved] = useState(false);
+  const [exportState, setExportState] = useState<"idle" | "success" | "error">("idle");
 
   const handleSave = () => {
     if (user) {
@@ -47,6 +49,18 @@ export default function SettingsPage() {
 
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
+  };
+
+  const handleExportCSV = () => {
+    try {
+      exportPocketFlowCSV();
+      setExportState("success");
+      setTimeout(() => setExportState("idle"), 2500);
+    } catch (err) {
+      console.error("Export CSV error:", err);
+      setExportState("error");
+      setTimeout(() => setExportState("idle"), 3000);
+    }
   };
 
   const handleFactoryReset = () => {
@@ -355,9 +369,27 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex flex-col gap-4 max-w-sm">
-                  <Button variant="glass" className="h-14 rounded-xl justify-start px-6">
-                    <Download className="w-4 h-4 mr-3 text-muted-foreground" />
-                    Export Data (CSV)
+                  <Button 
+                    variant="glass" 
+                    onClick={handleExportCSV}
+                    className="h-14 rounded-xl justify-start px-6 transition-all"
+                  >
+                    {exportState === "success" ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 mr-3 text-flow-emerald" />
+                        <span className="text-flow-emerald">Data Exported Successfully</span>
+                      </>
+                    ) : exportState === "error" ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 mr-3 text-destructive" />
+                        <span className="text-destructive">Export Failed. Try Again.</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-3 text-muted-foreground" />
+                        Export Data (CSV)
+                      </>
+                    )}
                   </Button>
                   
                   <Button 
