@@ -51,10 +51,30 @@ export function ExpenseInput() {
     if (isOpen) setDate(todayStr());
   }, [isOpen]);
 
-  // Keyboard shortcut (cmd+k or something similar could be added here)
+  // Global Keyboard shortcut (Shift + N or Alt + N to open Expense modal safely without browser conflicts)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) setIsOpen(false);
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        return;
+      }
+
+      // Check if user is currently typing in an input field
+      const target = e.target as HTMLElement | null;
+      const isInputActive = target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      );
+
+      if (isInputActive) return;
+
+      // Shift + N or Alt + N to open quick expense drawer
+      if ((e.shiftKey || e.altKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setIsOpen(true);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -107,9 +127,10 @@ export function ExpenseInput() {
         <motion.span
           initial={{ opacity: 0, x: 8 }}
           whileHover={{ opacity: 1, x: 0 }}
-          className="hidden md:block text-xs font-medium text-muted-foreground bg-card/60 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-full opacity-0 group-hover/fab:opacity-100 transition-all pointer-events-none select-none"
+          className="hidden md:flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-card/60 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-full opacity-0 group-hover/fab:opacity-100 transition-all pointer-events-none select-none"
         >
-          Add Expense
+          <span>Add Expense</span>
+          <kbd className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded font-mono text-foreground/80">Shift+N</kbd>
         </motion.span>
         <Button
           onClick={() => setIsOpen(true)}
