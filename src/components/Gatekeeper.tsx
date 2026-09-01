@@ -8,6 +8,7 @@ import { PocketFlowLoader } from "./PocketFlowLoader";
 
 export function Gatekeeper({ children }: { children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
+  const processAutoPayday = useUserStore((s) => s.processAutoPayday);
   const router = useRouter();
   const pathname = usePathname();
   const [isHydrated, setIsHydrated] = useState(false);
@@ -17,13 +18,15 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
     // Check if store has rehydrated from localStorage
     if (useUserStore.persist?.hasHydrated()) {
       setIsHydrated(true);
+      processAutoPayday();
     } else {
       const unsub = useUserStore.persist?.onFinishHydration(() => {
         setIsHydrated(true);
+        processAutoPayday();
       });
       return () => unsub?.();
     }
-  }, []);
+  }, [processAutoPayday]);
 
   useEffect(() => {
     if (!isHydrated) return;
