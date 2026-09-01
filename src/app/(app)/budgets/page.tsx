@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { Plus, X, Trash2, Wallet, RefreshCcw, Edit2 } from "lucide-react";
+import { Plus, X, Trash2, Wallet, RefreshCcw, Edit2, Check } from "lucide-react";
 import { useBudgetStore } from "@/store/useBudgetStore";
 import { useUserStore } from "@/store/useUserStore";
 import { RecurringBudget } from "@/store/types";
@@ -12,7 +12,7 @@ import { getCurrencySymbol } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
 
 export default function BudgetsPage() {
-  const { recurringBudgets, removeRecurringBudget, addRecurringBudget, updateRecurringBudget } = useBudgetStore();
+  const { recurringBudgets, removeRecurringBudget, addRecurringBudget, updateRecurringBudget, payRecurringBudget } = useBudgetStore();
   const { user } = useUserStore();
   const currencySymbol = getCurrencySymbol(user?.currency);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -181,6 +181,15 @@ export default function BudgetsPage() {
                           {isOverdue ? "Overdue" : daysUntil === 0 ? "Due today" : `In ${daysUntil} days`}
                         </span>
                       </div>
+
+                      <Button
+                        variant="glass"
+                        onClick={() => payRecurringBudget(budget.id)}
+                        className="w-full h-10 rounded-xl text-xs gap-2 font-medium hover:bg-flow-emerald/10 hover:text-flow-emerald hover:border-flow-emerald/30 transition-all mt-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Mark as Paid ({currencySymbol}{budget.amount.toFixed(0)})
+                      </Button>
                     </div>
                   </motion.div>
                 );
