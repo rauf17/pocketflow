@@ -12,7 +12,7 @@ export interface Income {
   id: string;
   amount: number;
   nextDate: string; // ISO String
-  frequency: 'monthly' | 'bi-weekly' | 'weekly';
+  frequency: 'monthly' | 'bi-weekly' | 'weekly' | 'semester';
 }
 
 export interface Category {

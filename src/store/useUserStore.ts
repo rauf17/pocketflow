@@ -69,6 +69,8 @@ export const useUserStore = create<UserState>()(
               currentNextDate = addWeeks(currentNextDate, 1);
             } else if (frequency === 'bi-weekly') {
               currentNextDate = addWeeks(currentNextDate, 2);
+            } else if (frequency === 'semester') {
+              currentNextDate = addMonths(currentNextDate, 6);
             } else {
               // Default to monthly
               currentNextDate = addMonths(currentNextDate, 1);

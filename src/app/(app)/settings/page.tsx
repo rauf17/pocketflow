@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState(user?.theme || "dark");
   const [incomeAmount, setIncomeAmount] = useState(income?.amount?.toString() || "");
   const [incomeDate, setIncomeDate] = useState(income?.nextDate ? new Date(income.nextDate).toISOString().split('T')[0] : "");
+  const [incomeFrequency, setIncomeFrequency] = useState<"monthly" | "bi-weekly" | "weekly" | "semester">(income?.frequency || "monthly");
   
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [editProfileName, setEditProfileName] = useState("");
@@ -44,6 +45,7 @@ export default function SettingsPage() {
         ...income,
         amount: Number(incomeAmount),
         nextDate: new Date(incomeDate).toISOString(),
+        frequency: incomeFrequency,
       });
     }
 
@@ -241,6 +243,20 @@ export default function SettingsPage() {
                       onChange={(e) => setIncomeDate(e.target.value)}
                       className="h-14 rounded-[1.25rem] bg-white/[0.02] border-white/10 focus-visible:bg-white/[0.05] px-4"
                     />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-xs font-medium uppercase tracking-widest text-muted-foreground ml-2">Payday Frequency</label>
+                    <select 
+                      value={incomeFrequency}
+                      onChange={(e) => setIncomeFrequency(e.target.value as "monthly" | "bi-weekly" | "weekly" | "semester")}
+                      className="w-full h-14 rounded-[1.25rem] bg-white/[0.02] border-white/10 text-foreground px-4 appearance-none focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                    >
+                      <option value="monthly">Monthly (Every 30 Days)</option>
+                      <option value="bi-weekly">Bi-Weekly (Every 14 Days)</option>
+                      <option value="weekly">Weekly (Every 7 Days)</option>
+                      <option value="semester">Semester / Custom (Every 6 Months)</option>
+                    </select>
                   </div>
                 </div>
 
