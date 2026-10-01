@@ -20,6 +20,7 @@ export default function ExpensesPage() {
   const { user, updateBalance } = useUserStore();
   const currencySymbol = getCurrencySymbol(user?.currency);
   
+  const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [activeTab, setActiveTab] = useState<"this-month" | "last-month">("this-month");
@@ -28,6 +29,11 @@ export default function ExpensesPage() {
   const [recapData, setRecapData] = useState<{ monthName: string; total: number; count: number } | null>(null);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const today = new Date();
     const currentMonthKey = format(today, "yyyy-MM");
     const storedMonthKey = localStorage.getItem("pocketflow_last_seen_month");
@@ -47,7 +53,7 @@ export default function ExpensesPage() {
     }
 
     localStorage.setItem("pocketflow_last_seen_month", currentMonthKey);
-  }, [expenses]);
+  }, [mounted, expenses]);
 
   // Deleting an expense must give the money back — it isn't spent anymore.
   const handleDelete = (expense: Expense) => {
@@ -58,10 +64,12 @@ export default function ExpensesPage() {
   const today = new Date();
   const startOfCurrentMonth = startOfMonth(today);
 
-  // Check if any expenses exist prior to current month
-  const hasPriorMonthExpenses = expenses.some(e =>
-    isBefore(startOfDay(new Date(e.date)), startOfCurrentMonth)
-  );
+  // Check if any expenses exist prior to current month (only after hydration)
+  const hasPriorMonthExpenses = mounted && expenses.some(e => {
+    const d = new Date(e.date);
+    if (isNaN(d.getTime())) return false;
+    return isBefore(startOfDay(d), startOfCurrentMonth);
+  });
 
   // Tab filtering
   const tabFilteredExpenses = expenses.filter(e => {
@@ -101,6 +109,8 @@ export default function ExpensesPage() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 400, damping: 30 } }
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="flex flex-col items-center w-full max-w-3xl mx-auto pt-16 px-6 pb-32">
