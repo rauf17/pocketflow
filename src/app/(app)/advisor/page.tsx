@@ -14,7 +14,7 @@ import { useGoalStore, totalGoalContributions, sortGoalsByPriority } from "@/sto
 import { User, Income, Expense, RecurringBudget, DayProfile, Goal } from "@/store/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, startOfDay, isBefore, isEqual, addDays, isSameMonth, isAfter, endOfDay, getDaysInMonth } from "date-fns";
+import { differenceInDays, startOfDay, isBefore, isEqual, addDays, isSameMonth, isAfter, endOfDay, getDaysInMonth, format } from "date-fns";
 import { getCurrencySymbol } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -109,37 +109,107 @@ function buildAIContext(
   const remainingSpendableAfterToday = Math.max(0, spendableBalance - spentToday);
   const adjustedDailyAllowance = remainingSpendableAfterToday > 0 ? Math.round(remainingSpendableAfterToday / remainingDays) : 0;
 
+  // Next 14 days trajectory plan
+  const next14DaysPlan = [];
+  for (let i = 0; i < 14; i++) {
+    const d = addDays(today, i);
+    const pid = weeklyPlan?.[d.getDay()];
+    const prof = profiles?.find(p => p.id === pid) ?? profiles?.[0];
+    next14DaysPlan.push({
+      date: format(d, "yyyy-MM-dd"),
+      dayOfWeek: format(d, "EEEE"),
+      profileName: prof?.name ?? "Default",
+      profileType: prof?.type ?? "normal",
+      expectedSpend: prof?.expectedSpend ?? 0,
+    });
+  }
+
+  // Sorted expenses descending
+  const sortedExpenses = [...(expenses ?? [])].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Recent 25 expenses
+  const recentExpenses = sortedExpenses.slice(0, 25).map(e => ({
+    date: format(new Date(e.date), "yyyy-MM-dd HH:mm"),
+    description: e.description,
+    amount: e.amount,
+  }));
+
+  // Monthly aggregates (up to 12 months)
+  const monthlyMap: Record<string, { total: number; count: number }> = {};
+  sortedExpenses.forEach(e => {
+    const d = new Date(e.date);
+    if (isNaN(d.getTime())) return;
+    const monthKey = format(d, "yyyy-MM");
+    if (!monthlyMap[monthKey]) {
+      monthlyMap[monthKey] = { total: 0, count: 0 };
+    }
+    monthlyMap[monthKey].total += e.amount;
+    monthlyMap[monthKey].count += 1;
+  });
+
+  const monthlyAggregates = Object.entries(monthlyMap).map(([month, data]) => ({
+    month,
+    totalSpent: Math.round(data.total),
+    expenseCount: data.count,
+  })).slice(0, 12);
+
   return {
-    currency,
-    currencySymbol,
-    balance,
-    billsReserved,
-    goalsReserved,
-    spendableBalance: Math.round(spendableBalance),
-    todayProfile: todayProfile ? { name: todayProfile.name, type: todayProfile.type, expectedSpend: todayProfile.expectedSpend } : null,
-    isSafeDay,
-    todayBudget: Math.round(todayBudget),
-    spentToday: Math.round(spentToday),
-    todayRemaining: Math.round(todayRemaining),
-    isOverBudget,
-    adjustedDailyAllowance,
-    totalSpentThisMonth: Math.round(totalSpentThisMonth),
-    daysElapsedInMonth,
-    daysRemainingInMonth,
-    incomeAmount: income?.amount ?? null,
-    nextPayday: income?.nextDate ?? null,
-    daysUntilIncome,
-    upcomingBills: upcomingBills.map(b => ({ title: b.title, amount: b.amount })),
-    goals: activeGoals.map(g => ({
+    userSettings: {
+      name: user?.name ?? "User",
+      currency,
+      currencySymbol,
+      hostelDaysMode: Boolean(user?.hostelDaysMode),
+      incomeAmount: income?.amount ?? null,
+      incomeSchedule: income?.frequency ?? "monthly",
+      nextPayday: income?.nextDate ?? null,
+    },
+    balances: {
+      currentBalance: balance,
+      billsReserved: Math.round(billsReserved),
+      goalsReserved: Math.round(goalsReserved),
+      spendableBalance: Math.round(spendableBalance),
+    },
+    spendingLimits: {
+      isSafeDay,
+      todayProfile: todayProfile ? { name: todayProfile.name, type: todayProfile.type, expectedSpend: todayProfile.expectedSpend } : null,
+      todayBudget: Math.round(todayBudget),
+      spentToday: Math.round(spentToday),
+      todayRemaining: Math.round(todayRemaining),
+      isOverBudget,
+      adjustedDailyAllowance,
+      totalSpentThisMonth: Math.round(totalSpentThisMonth),
+      daysElapsedInMonth,
+      daysRemainingInMonth,
+      daysUntilIncome,
+    },
+    recurringBills: (recurringBudgets ?? []).map(b => ({
+      title: b.title,
+      amount: b.amount,
+      frequency: b.frequency,
+      nextDueDate: b.nextDueDate,
+      isReservedBeforePayday: upcomingBills.some(ub => ub.id === b.id),
+    })),
+    goals: sortGoalsByPriority(goals ?? []).map(g => ({
       name: g.name,
       priority: g.priority,
       status: g.status,
       targetAmount: g.targetAmount,
       currentSaved: g.currentSaved,
-      remaining: Math.round(g.targetAmount - g.currentSaved),
+      remaining: Math.max(0, Math.round(g.targetAmount - g.currentSaved)),
       monthlyContribution: g.monthlyContribution,
+      targetDate: g.targetDate || null,
+      notes: g.notes || null,
     })),
-    recentExpenses: (expenses ?? []).slice(0, 3).map(e => ({ amount: e.amount, description: e.description })),
+    configuredProfiles: (profiles ?? []).map(p => ({
+      name: p.name,
+      type: p.type,
+      expectedSpend: p.expectedSpend,
+    })),
+    next14DaysPlan,
+    recentExpenses,
+    monthlyAggregates,
   };
 }
 

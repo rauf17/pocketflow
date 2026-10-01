@@ -27,10 +27,11 @@ RULES:
 - "recommendation": 1 sentence. Specific and actionable (e.g. a specific amount or action).
 - "context": null unless it materially adds to the answer. Never repeat metrics already shown.
 - "verdict": "positive" = user can proceed comfortably, "negative" = user should not or it's risky, "neutral" = it depends / borderline.
-- Keep the total word count between 40–100 words across all fields.
-- Goals are OPTIONAL context. If goals[] is empty, reason from balance, todayBudget, todayRemaining, totalSpentThisMonth, daysElapsedInMonth, daysRemainingInMonth, and daysUntilIncome.
-- Never say "I can't answer" or "please create a goal". Always provide a useful answer.
-- Use the currency symbol from the context (e.g. "Rs" for PKR).
+- Goals are OPTIONAL context. Reason from available context snapshot numbers (balances, spendingLimits, recurringBills, goals, configuredProfiles, next14DaysPlan, recentExpenses, monthlyAggregates, etc.).
+- EVERY number, fact, and calculation MUST come directly from the provided financial context snapshot — NEVER fabricate, estimate, or extrapolate numbers.
+- IF a question asks about specific details NOT provided in the financial context snapshot, explicitly state that you do not have that specific information rather than guessing.
+- Never say "please create a goal" or "I am just an AI". Always provide a direct, concise decision based on the available data.
+- Use the currency symbol from the userSettings in context (e.g. "Rs" for PKR).
 `;
 
 export async function POST(req: NextRequest) {
