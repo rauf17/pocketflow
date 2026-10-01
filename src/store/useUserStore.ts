@@ -40,7 +40,7 @@ export const useUserStore = create<UserState>()(
 
       completeOnboarding: () => set((state) => {
         if (state.user) {
-          return { user: { ...state.user, isOnboarded: true } };
+          return { user: { ...state.user, isOnboarded: true, hasSeenTour: false } };
         }
         return state;
       }),
@@ -97,6 +97,11 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'pocketflow-user-store-v2',
+      onRehydrateStorage: () => (state) => {
+        if (state?.user && state.user.isOnboarded && state.user.hasSeenTour === undefined) {
+          state.user.hasSeenTour = true;
+        }
+      },
     }
   )
 );
