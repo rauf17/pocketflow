@@ -99,7 +99,12 @@ export const useUserStore = create<UserState>()(
       name: 'pocketflow-user-store-v2',
       onRehydrateStorage: () => (state) => {
         if (state?.user && state.user.isOnboarded && state.user.hasSeenTour === undefined) {
-          state.user.hasSeenTour = true;
+          useUserStore.setState((s) => {
+            if (s.user && s.user.isOnboarded && s.user.hasSeenTour === undefined) {
+              return { user: { ...s.user, hasSeenTour: true } };
+            }
+            return s;
+          });
         }
       },
     }
