@@ -14,7 +14,7 @@ import { useGoalStore, totalGoalContributions, sortGoalsByPriority } from "@/sto
 import { User, Income, Expense, RecurringBudget, DayProfile, Goal } from "@/store/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, startOfDay, isBefore, isEqual, addDays } from "date-fns";
+import { differenceInDays, startOfDay, isBefore, isEqual, addDays, isSameMonth, isAfter, endOfDay, getDaysInMonth } from "date-fns";
 import { getCurrencySymbol } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,6 +94,17 @@ function buildAIContext(
   const todayRemaining = Math.max(0, todayBudget - spentToday);
   const isOverBudget = spentToday > todayBudget;
 
+  const now = new Date();
+  const currentMonthExpenses = (expenses ?? []).filter(e => {
+    const d = new Date(e.date);
+    return isSameMonth(d, now) && !isAfter(d, endOfDay(now));
+  });
+  const totalSpentThisMonth = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const daysElapsedInMonth = now.getDate();
+  const totalDaysInMonth = getDaysInMonth(now);
+  const daysRemainingInMonth = Math.max(0, totalDaysInMonth - daysElapsedInMonth);
+
   const remainingDays = Math.max(1, daysCount - 1);
   const remainingSpendableAfterToday = Math.max(0, spendableBalance - spentToday);
   const adjustedDailyAllowance = remainingSpendableAfterToday > 0 ? Math.round(remainingSpendableAfterToday / remainingDays) : 0;
@@ -112,6 +123,9 @@ function buildAIContext(
     todayRemaining: Math.round(todayRemaining),
     isOverBudget,
     adjustedDailyAllowance,
+    totalSpentThisMonth: Math.round(totalSpentThisMonth),
+    daysElapsedInMonth,
+    daysRemainingInMonth,
     incomeAmount: income?.amount ?? null,
     nextPayday: income?.nextDate ?? null,
     daysUntilIncome,

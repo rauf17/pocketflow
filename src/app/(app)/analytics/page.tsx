@@ -4,7 +4,7 @@ import { useExpenseStore } from "@/store/useExpenseStore";
 import { useUserStore } from "@/store/useUserStore";
 import { Brain, Flame, Target, CalendarDays, Activity } from "lucide-react";
 import { motion, Variants } from "framer-motion";
-import { differenceInDays, startOfMonth, endOfMonth, isSameMonth, getDay } from "date-fns";
+import { differenceInDays, startOfMonth, endOfMonth, isSameMonth, getDay, isAfter, endOfDay } from "date-fns";
 import { getCurrencySymbol } from "@/lib/utils";
 
 export default function AnalyticsPage() {
@@ -12,10 +12,13 @@ export default function AnalyticsPage() {
   const { user } = useUserStore();
   const currencySymbol = getCurrencySymbol(user?.currency);
 
-  const currentMonthExpenses = expenses.filter(e => isSameMonth(new Date(e.date), new Date()));
+  const today = new Date();
+  const currentMonthExpenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    return isSameMonth(d, today) && !isAfter(d, endOfDay(today));
+  });
   const totalSpentThisMonth = currentMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
   
-  const today = new Date();
   const daysInMonth = differenceInDays(endOfMonth(today), startOfMonth(today)) + 1;
   const currentDayOfMonth = today.getDate();
   const avgDailySpent = currentDayOfMonth > 0 ? totalSpentThisMonth / currentDayOfMonth : 0;
@@ -50,6 +53,15 @@ export default function AnalyticsPage() {
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h2 className="text-3xl font-light tracking-tight">Insights</h2>
           <p className="text-sm text-muted-foreground mt-2">AI-driven analysis of your spending habits.</p>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }} 
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-col items-end"
+        >
+          <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-1">This Month</span>
+          <span className="text-2xl font-light tracking-tight text-foreground">{currencySymbol}{totalSpentThisMonth.toLocaleString()}</span>
         </motion.div>
       </header>
 

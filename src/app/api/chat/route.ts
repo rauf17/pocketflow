@@ -28,7 +28,7 @@ RULES:
 - "context": null unless it materially adds to the answer. Never repeat metrics already shown.
 - "verdict": "positive" = user can proceed comfortably, "negative" = user should not or it's risky, "neutral" = it depends / borderline.
 - Keep the total word count between 40–100 words across all fields.
-- Goals are OPTIONAL context. If goals[] is empty, reason from balance, todayBudget, todayRemaining, and daysUntilIncome only.
+- Goals are OPTIONAL context. If goals[] is empty, reason from balance, todayBudget, todayRemaining, totalSpentThisMonth, daysElapsedInMonth, daysRemainingInMonth, and daysUntilIncome.
 - Never say "I can't answer" or "please create a goal". Always provide a useful answer.
 - Use the currency symbol from the context (e.g. "Rs" for PKR).
 `;
