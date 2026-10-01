@@ -10,6 +10,7 @@ interface UserState {
   setUser: (user: Partial<User>) => void;
   setIncome: (income: Income) => void;
   completeOnboarding: () => void;
+  setHasSeenTour: (hasSeen: boolean) => void;
   updateBalance: (amount: number) => void;
   processAutoPayday: () => void;
   resetUser: () => void;
@@ -29,6 +30,7 @@ export const useUserStore = create<UserState>()(
           theme: 'dark',
           hostelDaysMode: false,
           isOnboarded: false,
+          hasSeenTour: false,
           id: crypto.randomUUID(),
           ...userData 
         } as User 
@@ -39,6 +41,13 @@ export const useUserStore = create<UserState>()(
       completeOnboarding: () => set((state) => {
         if (state.user) {
           return { user: { ...state.user, isOnboarded: true } };
+        }
+        return state;
+      }),
+
+      setHasSeenTour: (hasSeen) => set((state) => {
+        if (state.user) {
+          return { user: { ...state.user, hasSeenTour: hasSeen } };
         }
         return state;
       }),

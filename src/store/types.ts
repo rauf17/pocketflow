@@ -5,6 +5,7 @@ export interface User {
   theme: 'dark' | 'light' | 'system';
   hostelDaysMode: boolean;
   isOnboarded: boolean;
+  hasSeenTour?: boolean;
   balance: number;
 }
 

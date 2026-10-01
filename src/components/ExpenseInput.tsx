@@ -118,6 +118,7 @@ export function ExpenseInput() {
     <>
       {/* Floating Action Button */}
       <motion.div
+        data-tour="add-expense"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 25, delay: 0.5 }}

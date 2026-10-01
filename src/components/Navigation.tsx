@@ -161,6 +161,7 @@ export function Sidebar() {
             <Link 
               key={item.name} 
               href={item.href}
+              data-tour={`nav-${item.name.toLowerCase()}`}
               className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 relative group ${
                 isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/[0.02]"
               }`}
@@ -235,6 +236,7 @@ export function BottomNav() {
               <Link 
                 key={item.name} 
                 href={item.href}
+                data-tour={`nav-${item.name.toLowerCase()}`}
                 className={`flex flex-col items-center justify-center p-3 relative w-16 h-16 ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`}
@@ -313,6 +315,7 @@ export function BottomNav() {
                     <Link
                       key={item.name}
                       href={item.href}
+                      data-tour={`nav-${item.name.toLowerCase()}`}
                       onClick={() => setIsMoreOpen(false)}
                       className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
                         isActive

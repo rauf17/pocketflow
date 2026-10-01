@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStore } from "@/store/useUserStore";
 import { useProfileStore } from "@/store/useProfileStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Smartphone, Moon, Sun, Trash2, Download, CheckCircle2, Wallet, Shield, Settings2, Map, Plus, Edit2, Check, AlertCircle } from "lucide-react";
+import { Smartphone, Moon, Sun, Trash2, Download, CheckCircle2, Wallet, Shield, Settings2, Map, Plus, Edit2, Check, AlertCircle, Compass } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/utils";
 import { exportPocketFlowCSV } from "@/lib/exportCSV";
 
 export default function SettingsPage() {
-  const { user, income, setUser, setIncome } = useUserStore();
+  const router = useRouter();
+  const { user, income, setUser, setIncome, setHasSeenTour } = useUserStore();
   const { profiles, addProfile, deleteProfile, updateProfile } = useProfileStore();
   const activeCurrencySymbol = getCurrencySymbol(user?.currency);
 
@@ -164,6 +166,24 @@ export default function SettingsPage() {
                     "Save Changes"
                   )}
                 </Button>
+
+                <div className="pt-6 border-t border-white/5 flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-lg font-medium text-foreground/90">Navigation Tour</h3>
+                    <p className="text-sm text-muted-foreground">Replay the introductory feature tour of PocketFlow.</p>
+                  </div>
+                  <Button 
+                    variant="glass"
+                    onClick={() => {
+                      setHasSeenTour(false);
+                      router.push("/dashboard");
+                    }}
+                    className="w-fit rounded-2xl border-white/10 hover:bg-white/5 gap-2.5 px-5 py-3 h-auto"
+                  >
+                    <Compass className="w-4 h-4 text-flow-emerald" />
+                    <span>Replay Tour</span>
+                  </Button>
+                </div>
               </motion.div>
             )}
 

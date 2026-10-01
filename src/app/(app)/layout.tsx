@@ -1,6 +1,7 @@
 import { Sidebar, BottomNav } from "@/components/Navigation";
 import { LivingFlow } from "@/components/LivingFlow";
 import { Gatekeeper, MobileHeader } from "@/components/Gatekeeper";
+import { NavigationTour } from "@/components/NavigationTour";
 
 export default function AppLayout({
   children,
@@ -10,6 +11,9 @@ export default function AppLayout({
   return (
     <Gatekeeper>
       <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+        {/* Navigation Tour */}
+        <NavigationTour />
+
         {/* Mobile Header with Wave P Logo */}
         <MobileHeader />
 
