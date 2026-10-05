@@ -28,7 +28,7 @@ export default function AppLayout({
 
         <Sidebar />
         
-        <main className="flex-1 md:ml-64 w-full pb-24 md:pb-0 min-h-screen">
+        <main className="flex-1 md:ml-72 w-full pb-24 md:pb-0 min-h-screen">
           {children}
         </main>
 

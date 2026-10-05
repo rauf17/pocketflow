@@ -15,17 +15,25 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
   const [animDone, setAnimDone] = useState(false);
 
   useEffect(() => {
-    // Check if store has rehydrated from localStorage
-    if (useUserStore.persist?.hasHydrated()) {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
       setIsHydrated(true);
       processAutoPayday();
-    } else {
-      const unsub = useUserStore.persist?.onFinishHydration(() => {
-        setIsHydrated(true);
-        processAutoPayday();
-      });
-      return () => unsub?.();
+    };
+
+    if (useUserStore.persist?.hasHydrated()) {
+      finish();
+      return;
     }
+    const unsub = useUserStore.persist?.onFinishHydration(finish);
+    // Safety net: never trap the user on the loader if hydration stalls.
+    const timeout = setTimeout(finish, 3000);
+    return () => {
+      unsub?.();
+      clearTimeout(timeout);
+    };
   }, [processAutoPayday]);
 
   useEffect(() => {

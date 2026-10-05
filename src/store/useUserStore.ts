@@ -97,15 +97,19 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'pocketflow-user-store-v2',
-      onRehydrateStorage: () => (state) => {
+      // Bump this whenever the persisted shape changes; `migrate` runs once for
+      // any older saved data. NEVER reference `useUserStore` from
+      // onRehydrateStorage: localStorage hydrates synchronously *inside*
+      // create(), so the const doesn't exist yet (TDZ error) and zustand
+      // swallows it, leaving hasHydrated() === false forever.
+      version: 3,
+      migrate: (persisted: unknown) => {
+        const state = persisted as { user?: Partial<User> | null } | undefined;
+        // Users onboarded before the tour existed must not get the tour.
         if (state?.user && state.user.isOnboarded && state.user.hasSeenTour === undefined) {
-          useUserStore.setState((s) => {
-            if (s.user && s.user.isOnboarded && s.user.hasSeenTour === undefined) {
-              return { user: { ...s.user, hasSeenTour: true } };
-            }
-            return s;
-          });
+          state.user = { ...state.user, hasSeenTour: true };
         }
+        return state as unknown as UserState;
       },
     }
   )
