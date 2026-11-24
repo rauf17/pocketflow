@@ -9,6 +9,9 @@ import {
 import { Search, Trash2, Receipt, Pencil, Sparkles, X } from "lucide-react";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useUserStore } from "@/store/useUserStore";
+import { useBudgetStore } from "@/store/useBudgetStore";
+import { useSnackbarStore } from "@/store/useSnackbarStore";
+import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditExpenseDialog } from "@/components/EditExpenseDialog";
@@ -16,8 +19,10 @@ import { getCurrencySymbol } from "@/lib/utils";
 import type { Expense } from "@/store/types";
 
 export default function ExpensesPage() {
-  const { expenses, removeExpense } = useExpenseStore();
-  const { user, updateBalance } = useUserStore();
+  const { expenses, removeExpense, restoreExpense } = useExpenseStore();
+  const { user, deposits, removeDeposit, restoreDeposit } = useUserStore();
+  const categories = useBudgetStore((s) => s.categories);
+  const showSnackbar = useSnackbarStore((s) => s.show);
   const currencySymbol = getCurrencySymbol(user?.currency);
   
   const [mounted, setMounted] = useState(false);
@@ -56,9 +61,25 @@ export default function ExpensesPage() {
   }, [mounted, expenses]);
 
   // Deleting an expense must give the money back — it isn't spent anymore.
+  // The balance is derived from the ledger, so removing the expense gives it back automatically.
   const handleDelete = (expense: Expense) => {
-    updateBalance(expense.amount);
     removeExpense(expense.id);
+    showSnackbar({
+      message: "Expense deleted",
+      actionLabel: "Undo",
+      onAction: () => restoreExpense(expense),
+    });
+  };
+
+  const handleDeleteDeposit = (id: string) => {
+    const removed = deposits.find((d) => d.id === id);
+    if (!removed) return;
+    removeDeposit(id);
+    showSnackbar({
+      message: "Entry removed",
+      actionLabel: "Undo",
+      onAction: () => restoreDeposit(removed),
+    });
   };
 
   const today = new Date();
@@ -239,7 +260,12 @@ export default function ExpensesPage() {
                       >
                         <div className="flex flex-col relative z-10">
                           <span className="font-medium text-foreground/90 text-lg">{expense.description}</span>
-                          <span className="text-xs text-muted-foreground mt-1 tracking-wide">{format(new Date(expense.date), "h:mm a")}</span>
+                          <span className="text-xs text-muted-foreground mt-1 tracking-wide">
+                            {format(new Date(expense.date), "h:mm a")}
+                            {expense.categoryId && categories.find(c => c.id === expense.categoryId) && (
+                              <> · {categories.find(c => c.id === expense.categoryId)?.name}</>
+                            )}
+                          </span>
                         </div>
                         <div className="flex items-center gap-6 relative z-10">
                           <span className="text-2xl font-light text-foreground">
@@ -274,6 +300,39 @@ export default function ExpensesPage() {
           )}
         </AnimatePresence>
       </div>
+
+      {deposits.length > 0 && (
+        <section className="w-full mt-16">
+          <h3 className="text-sm font-medium tracking-widest text-muted-foreground uppercase mb-4">Income &amp; corrections</h3>
+          <div className="flex flex-col gap-2">
+            {[...deposits]
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, 12)
+              .map((d) => (
+                <div key={d.id} className="flex items-center justify-between px-5 py-3 rounded-2xl bg-card/30 border border-white/5 group">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-foreground/90">{d.label}</span>
+                    <span className="text-xs text-muted-foreground">{format(new Date(d.date), "MMM d, yyyy")}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-lg font-light ${d.amount >= 0 ? "text-flow-emerald" : "text-flow-amber"}`}>
+                      {d.amount >= 0 ? "+" : ""}{formatMoney(d.amount, user?.currency)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove ${d.label}`}
+                      onClick={() => handleDeleteDeposit(d.id)}
+                      className="text-destructive/50 hover:text-destructive hover:bg-destructive/10 rounded-xl w-9 h-9 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
 
       <EditExpenseDialog expense={editingExpense} onOpenChange={(open) => !open && setEditingExpense(null)} />
     </div>

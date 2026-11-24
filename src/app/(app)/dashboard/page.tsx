@@ -4,13 +4,15 @@ import { useUserStore } from "@/store/useUserStore";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useBudgetStore } from "@/store/useBudgetStore";
 import { useProfileStore } from "@/store/useProfileStore";
-import { useGoalStore, totalGoalContributions, sortGoalsByPriority, computeCompletionDate } from "@/store/useGoalStore";
+import { useGoalStore, computeCompletionDate } from "@/store/useGoalStore";
+import { useBalance } from "@/store/useBalance";
+import { computeBudget, activeGoalsByPriority } from "@/lib/budgetEngine";
 import { getCurrencySymbol } from "@/lib/utils";
 import { AnimatedCounter } from "@/components/AnimatedCounter";
 import { ExpenseInput } from "@/components/ExpenseInput";
 import { LivingFlow, DayNode } from "@/components/LivingFlow";
 import { motion, Variants } from "framer-motion";
-import { differenceInDays, startOfDay, isBefore, isEqual, format, addDays } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ArrowRight, Receipt, Clock, Wallet, TrendingDown, Shield, Coffee, Briefcase, ShoppingBag, Zap, Target, AlertTriangle, Brain } from "lucide-react";
 import Link from "next/link";
 
@@ -28,143 +30,60 @@ export default function DashboardPage() {
   const { recurringBudgets } = useBudgetStore();
   const { profiles, weeklyPlan } = useProfileStore();
   const { goals } = useGoalStore();
+  const balance = useBalance();
 
   if (!user || !income) return null;
 
-  // ─── LAYER 1: Time Context ─────────────────────────────────────────────────
-  const today = startOfDay(new Date());
-  const incomeDate = startOfDay(new Date(income.nextDate));
-  let daysUntilIncome = differenceInDays(incomeDate, today);
-  if (daysUntilIncome < 0) daysUntilIncome = 0;
-
-  // ─── LAYER 2: Recurring Bills Reserved ────────────────────────────────────
-  let upcomingBillsTotal = 0;
-  recurringBudgets.forEach(bill => {
-    const billDate = startOfDay(new Date(bill.nextDueDate));
-    if (isBefore(billDate, incomeDate) || isEqual(billDate, incomeDate)) {
-      upcomingBillsTotal += bill.amount;
-    }
+  // All budget math lives in the shared, tested engine (src/lib/budgetEngine.ts).
+  const engine = computeBudget({
+    now: new Date(),
+    balance,
+    nextPayday: income.nextDate,
+    bills: recurringBudgets,
+    goals,
+    profiles,
+    weeklyPlan,
+    expenses,
   });
 
-  // ─── LAYER 3: Goal Contributions Reserved (Priority Order) ────────────────
-  const activeGoals = sortGoalsByPriority(goals.filter(g => g.status !== "completed"));
-  const goalsReservedTotal = totalGoalContributions(activeGoals);
+  const {
+    today, daysUntilIncome, goalsProtectedMode, spendableBalance, safeLimit,
+    spentToday, remainingToday, isOverBudget, todayProfile,
+  } = engine;
+  const upcomingBillsTotal = engine.billsReserved;
+  const activeGoals = activeGoalsByPriority(goals);
 
-  // ─── LAYER 4: Spendable Balance ───────────────────────────────────────────
-  const rawSpendable = user.balance - upcomingBillsTotal - goalsReservedTotal;
-  const spendableBalance = Math.max(0, rawSpendable);
-  const goalsProtectedMode = rawSpendable <= 0;
-
-  // ─── LAYER 5: Day Profile Budget Engine ───────────────────────────────────
-  let totalExpectedSpendForRemainingDays = 0;
-  let nonSafeDaysCount = 0;
-
-  for (let i = 0; i < daysUntilIncome; i++) {
-    const date = addDays(today, i);
-    const profileId = weeklyPlan[date.getDay()];
-    const profile = profiles.find(p => p.id === profileId) || profiles[0];
-    totalExpectedSpendForRemainingDays += profile.expectedSpend;
-    if (profile.type !== "safe" && profile.expectedSpend > 0) nonSafeDaysCount++;
-  }
-
-  const todayProfileId = weeklyPlan[today.getDay()];
-  const todayProfile = profiles.find(p => p.id === todayProfileId) || profiles[0];
-
-  let safeLimit = 0;
-  const surplus = spendableBalance - totalExpectedSpendForRemainingDays;
-
-  if (goalsProtectedMode) {
-    safeLimit = 0;
-  } else if (daysUntilIncome === 0) {
-    safeLimit = spendableBalance;
-  } else if (todayProfile.expectedSpend === 0) {
-    safeLimit = 0;
-  } else if (surplus >= 0) {
-    const extraPerDay = nonSafeDaysCount > 0 ? surplus / nonSafeDaysCount : 0;
-    safeLimit = todayProfile.expectedSpend + extraPerDay;
-  } else {
-    const scalingFactor = totalExpectedSpendForRemainingDays > 0
-      ? spendableBalance / totalExpectedSpendForRemainingDays : 1;
-    safeLimit = todayProfile.expectedSpend * scalingFactor;
-  }
-
-  // ─── LAYER 6: Today's Actuals ─────────────────────────────────────────────
-  const spentToday = expenses
-    .filter(e => startOfDay(new Date(e.date)).getTime() === today.getTime())
-    .reduce((sum, e) => sum + e.amount, 0);
-
-  const remainingToday = safeLimit - spentToday;
-  const isOverBudget = remainingToday < 0;
-
-  // ─── Tomorrow's Allowance (from engine) ───────────────────────────────────
-  let tomorrowAllowance = 0;
-  const tomorrow = addDays(today, 1);
-  const tomorrowProfileId = weeklyPlan[tomorrow.getDay()];
-  const tomorrowProfile = profiles.find(p => p.id === tomorrowProfileId) || profiles[0];
-
-  if (daysUntilIncome <= 1) {
-    tomorrowAllowance = -1; // Payday flag
-  } else if (tomorrowProfile.expectedSpend === 0) {
-    tomorrowAllowance = 0;
-  } else {
-    const safeBalanceAfterToday = Math.max(0, spendableBalance - spentToday);
-    const expectedSpendFuture = Math.max(0, totalExpectedSpendForRemainingDays - todayProfile.expectedSpend);
-    const futureSurplus = safeBalanceAfterToday - expectedSpendFuture;
-    const futureNonSafe = (todayProfile.type !== "safe" && todayProfile.expectedSpend > 0)
-      ? Math.max(0, nonSafeDaysCount - 1)
-      : nonSafeDaysCount;
-
-    if (futureSurplus >= 0) {
-      tomorrowAllowance = tomorrowProfile.expectedSpend + (futureNonSafe > 0 ? futureSurplus / futureNonSafe : 0);
-    } else {
-      tomorrowAllowance = expectedSpendFuture > 0
-        ? tomorrowProfile.expectedSpend * (safeBalanceAfterToday / expectedSpendFuture)
-        : 0;
-    }
-  }
-
+  // ─── Tomorrow's Allowance (-1 flags payday) ───────────────────────────────
+  const tomorrowProfile = profiles.find(p => p.id === weeklyPlan[addDays(today, 1).getDay()]) || profiles[0];
+  const tomorrowAllowance = engine.isTomorrowPayday ? -1 : engine.tomorrowAllowance;
   const tomorrowLabel = tomorrowAllowance === -1
     ? "Payday!"
     : `${getCurrencySymbol(user.currency)}${tomorrowAllowance.toFixed(0)}`;
 
   // ─── Full Day Trajectory (for LivingFlow) ─────────────────────────────────
-  const scalingFactor = totalExpectedSpendForRemainingDays > 0
-    ? Math.min(1, spendableBalance / totalExpectedSpendForRemainingDays) : 1;
-
-  const dayTrajectory: DayNode[] = [];
-  for (let i = 0; i < Math.min(daysUntilIncome, 30); i++) {
-    const date = addDays(today, i);
-    const profileId = weeklyPlan[date.getDay()];
-    const profile = profiles.find(p => p.id === profileId) || profiles[0];
-
-    const daySafeLimit = goalsProtectedMode
-      ? 0
-      : surplus >= 0
-        ? profile.expectedSpend + (nonSafeDaysCount > 0 ? surplus / nonSafeDaysCount : 0)
-        : profile.expectedSpend * scalingFactor;
-
+  const dayTrajectory: DayNode[] = engine.days.slice(0, 30).map(({ date, profile, limit }, i) => {
     const isToday = i === 0;
     const projectedSpend = isToday ? spentToday : profile.expectedSpend;
-    const remaining = daySafeLimit - projectedSpend;
+    const remaining = limit - projectedSpend;
 
     let status: DayNode["status"];
     if (profile.type === "safe") status = "safe-day";
     else if (isToday && isOverBudget) status = "over-budget";
-    else if (remaining < daySafeLimit * 0.35 && daySafeLimit > 0) status = "approaching";
+    else if (remaining < limit * 0.35 && limit > 0) status = "approaching";
     else status = "on-track";
 
-    dayTrajectory.push({
+    return {
       dateLabel: format(date, "EEE, d MMM"),
       profileName: profile.name,
       profileType: profile.type,
-      safeLimit: Math.round(daySafeLimit),
+      safeLimit: Math.round(limit),
       projectedSpend: Math.round(projectedSpend),
       actualSpend: isToday ? Math.round(spentToday) : undefined,
       remaining: Math.round(remaining),
       isToday,
       status,
-    });
-  }
+    };
+  });
 
   // ─── Goal Summary ──────────────────────────────────────────────────────────
   const atRiskGoals = activeGoals.filter(g => g.status === "at-risk" || g.status === "behind");

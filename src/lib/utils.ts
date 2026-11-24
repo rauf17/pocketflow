@@ -23,12 +23,4 @@ export function clampExpenseDate(dateInput: string | Date): string {
   return date.toISOString();
 }
 
-export function getCurrencySymbol(currencyCode: string | undefined): string {
-  switch (currencyCode?.toUpperCase()) {
-    case 'USD': return '$';
-    case 'PKR': return 'Rs';
-    case 'EUR': return '€';
-    case 'GBP': return '£';
-    default: return '$';
-  }
-}
+export { getCurrencySymbol } from "./currency"

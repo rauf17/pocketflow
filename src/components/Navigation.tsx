@@ -3,16 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Receipt, PieChart, Settings, Brain, Clock, Map, Wallet, Target, MoreHorizontal, X } from "lucide-react";
+import { Home, Receipt, PieChart, Settings, Brain, Clock, Map, Wallet, Target, MoreHorizontal, X, Lightbulb } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PocketFlowLogo } from "./PocketFlowLogo";
 import { useUserStore } from "@/store/useUserStore";
-import { useExpenseStore } from "@/store/useExpenseStore";
-import { useBudgetStore } from "@/store/useBudgetStore";
-import { useProfileStore } from "@/store/useProfileStore";
-import { useGoalStore, sortGoalsByPriority, totalGoalContributions } from "@/store/useGoalStore";
+import { useGoalStore } from "@/store/useGoalStore";
+import { useBudget } from "@/store/useBudget";
 import { Goal } from "@/store/types";
-import { startOfDay, differenceInDays, isBefore, isEqual, addDays } from "date-fns";
 import { getCurrencySymbol } from "@/lib/utils";
 
 const navItems = [
@@ -22,6 +19,7 @@ const navItems = [
   { name: "Budgets",    href: "/budgets",   icon: Clock },
   { name: "Goals",      href: "/goals",     icon: Target },
   { name: "Analytics",  href: "/analytics", icon: PieChart },
+  { name: "Insights",   href: "/insights",  icon: Lightbulb },
   { name: "Advisor",    href: "/advisor",   icon: Brain },
   { name: "Settings",   href: "/settings",  icon: Settings },
 ];
@@ -30,75 +28,14 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isLogoHovered, setIsLogoHovered] = useState(false);
   
-  const { user, income } = useUserStore();
-  const { expenses } = useExpenseStore();
+  const { user } = useUserStore();
   const { goals } = useGoalStore();
   const atRiskGoals = (goals || []).filter((g: Goal) => g.status === 'at-risk' || g.status === 'behind');
   const activeGoals = (goals || []).filter((g: Goal) => g.status !== 'completed');
 
-  const getRemainingBudgetToday = () => {
-    if (!user || !income) return { limit: 0, remaining: 0, isOverBudget: false };
-    const today = startOfDay(new Date());
-    const incomeDate = startOfDay(new Date(income.nextDate));
-    let daysUntilIncome = differenceInDays(incomeDate, today);
-    if (daysUntilIncome < 0) daysUntilIncome = 0;
-
-    // Bills reserved
-    const upcomingBillsTotal = (useBudgetStore.getState().recurringBudgets || []).reduce((sum, b) => {
-      const billDate = startOfDay(new Date(b.nextDueDate));
-      return (isBefore(billDate, incomeDate) || isEqual(billDate, incomeDate)) ? sum + b.amount : sum;
-    }, 0);
-
-    // Goals reserved
-    const activeGoalList = sortGoalsByPriority((goals || []).filter((g: Goal) => g.status !== 'completed'));
-    const goalsReservedTotal = totalGoalContributions(activeGoalList);
-
-    const spendableBalance = Math.max(0, user.balance - upcomingBillsTotal - goalsReservedTotal);
-    const goalsProtectedMode = user.balance - upcomingBillsTotal - goalsReservedTotal <= 0;
-
-    const profiles = useProfileStore.getState().profiles;
-    const weeklyPlan = useProfileStore.getState().weeklyPlan;
-
-    let totalExpectedSpend = 0;
-    let nonSafeDaysCount = 0;
-
-    for (let i = 0; i < daysUntilIncome; i++) {
-      const date = addDays(today, i);
-      const profileId = weeklyPlan[date.getDay()];
-      const profile = profiles.find(p => p.id === profileId) || profiles[0];
-      if (profile) {
-        totalExpectedSpend += profile.expectedSpend;
-        if (profile.type !== 'safe' && profile.expectedSpend > 0) nonSafeDaysCount++;
-      }
-    }
-
-    const todayProfileId = weeklyPlan[today.getDay()];
-    const todayProfile = profiles.find(p => p.id === todayProfileId) || profiles[0];
-
-    let safeLimit = 0;
-    const surplus = spendableBalance - totalExpectedSpend;
-
-    if (goalsProtectedMode || todayProfile?.expectedSpend === 0) {
-      safeLimit = 0;
-    } else if (daysUntilIncome === 0) {
-      safeLimit = spendableBalance;
-    } else if (surplus >= 0) {
-      const extraPerDay = nonSafeDaysCount > 0 ? surplus / nonSafeDaysCount : 0;
-      safeLimit = (todayProfile?.expectedSpend || 0) + extraPerDay;
-    } else {
-      const scalingFactor = totalExpectedSpend > 0 ? spendableBalance / totalExpectedSpend : 1;
-      safeLimit = (todayProfile?.expectedSpend || 0) * scalingFactor;
-    }
-
-    const spentToday = expenses
-      .filter(e => startOfDay(new Date(e.date)).getTime() === today.getTime())
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    const remaining = safeLimit - spentToday;
-    return { limit: safeLimit, remaining, isOverBudget: remaining < 0 };
-  };
-
-  const { remaining, isOverBudget } = getRemainingBudgetToday();
+  const budget = useBudget();
+  const remaining = budget?.remainingToday ?? 0;
+  const isOverBudget = budget?.isOverBudget ?? false;
   const currencySymbol = getCurrencySymbol(user?.currency);
 
   return (
@@ -221,8 +158,8 @@ export function BottomNav() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   
   // Primary 4 items + "More" toggle for mobile
-  const primaryMobileItems = [navItems[0], navItems[1], navItems[4], navItems[6]]; // Dashboard, Planner, Goals, Advisor
-  const overflowItems = [navItems[2], navItems[3], navItems[5], navItems[7]];      // Expenses, Budgets, Analytics, Settings
+  const primaryMobileItems = [navItems[0], navItems[1], navItems[4], navItems[7]]; // Dashboard, Planner, Goals, Advisor
+  const overflowItems = [navItems[2], navItems[3], navItems[5], navItems[6], navItems[8]]; // Expenses, Budgets, Analytics, Insights, Settings
 
   const isOverflowActive = overflowItems.some((item) => pathname.startsWith(item.href));
 

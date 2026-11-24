@@ -10,11 +10,13 @@ import { useUserStore } from "@/store/useUserStore";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useBudgetStore } from "@/store/useBudgetStore";
 import { useProfileStore } from "@/store/useProfileStore";
-import { useGoalStore, totalGoalContributions, sortGoalsByPriority } from "@/store/useGoalStore";
+import { useGoalStore, sortGoalsByPriority } from "@/store/useGoalStore";
+import { useBalance } from "@/store/useBalance";
+import { computeBudget, billOccurrencesUntil } from "@/lib/budgetEngine";
 import { User, Income, Expense, RecurringBudget, DayProfile, Goal } from "@/store/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { differenceInDays, startOfDay, isBefore, isEqual, addDays, isSameMonth, isAfter, endOfDay, getDaysInMonth, format } from "date-fns";
+import { startOfDay, addDays, isSameMonth, isAfter, endOfDay, getDaysInMonth, format } from "date-fns";
 import { getCurrencySymbol } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,60 +41,40 @@ function buildAIContext(
   profiles: DayProfile[],
   weeklyPlan: Record<number, string>,
   goals: Goal[],
+  balance: number,
 ) {
   const today = startOfDay(new Date());
-  const balance = user?.balance ?? 0;
   const currency = user?.currency ?? "PKR";
   const currencySymbol = getCurrencySymbol(currency);
 
-  const incomeDate = income ? startOfDay(new Date(income.nextDate)) : null;
-  const daysUntilIncome = incomeDate ? Math.max(0, differenceInDays(incomeDate, today)) : null;
+  // The same engine that powers the dashboard — the AI can never disagree with the UI.
+  const engine = computeBudget({
+    now: new Date(),
+    balance,
+    nextPayday: income?.nextDate ?? null,
+    bills: recurringBudgets ?? [],
+    goals: goals ?? [],
+    profiles: profiles ?? [],
+    weeklyPlan: weeklyPlan ?? {},
+    expenses: expenses ?? [],
+  });
 
+  const daysUntilIncome = income ? engine.daysUntilIncome : null;
+  const daysCount = engine.daysUntilIncome;
+  const incomeDate = income ? startOfDay(new Date(income.nextDate)) : null;
   const upcomingBills = (recurringBudgets ?? []).filter(bill => {
     if (!incomeDate) return false;
-    const d = startOfDay(new Date(bill.nextDueDate));
-    return isBefore(d, incomeDate) || isEqual(d, incomeDate);
+    return billOccurrencesUntil(bill, incomeDate) > 0;
   });
-  const billsReserved = upcomingBills.reduce((s, b) => s + b.amount, 0);
-
-  const activeGoals = sortGoalsByPriority((goals ?? []).filter(g => g.status !== "completed"));
-  const goalsReserved = totalGoalContributions(activeGoals);
-
-  const spendableBalance = Math.max(0, balance - billsReserved - goalsReserved);
-
-  const todayProfileId = weeklyPlan?.[today.getDay()];
-  const todayProfile = profiles?.find(p => p.id === todayProfileId) ?? profiles?.[0];
-  const isSafeDay = todayProfile?.type === "safe";
-
-  let totalExpectedSpend = 0;
-  let nonSafeDays = 0;
-  const daysCount = daysUntilIncome ?? 0;
-  for (let i = 0; i < daysCount; i++) {
-    const date = addDays(today, i);
-    const pid = weeklyPlan?.[date.getDay()];
-    const profile = profiles?.find(p => p.id === pid) ?? profiles?.[0];
-    if (profile) {
-      totalExpectedSpend += profile.expectedSpend;
-      if (profile.type !== "safe" && profile.expectedSpend > 0) nonSafeDays++;
-    }
-  }
-
-  let todayBudget = 0;
-  const surplus = spendableBalance - totalExpectedSpend;
-  if (daysCount === 0) {
-    todayBudget = spendableBalance;
-  } else if (isSafeDay) {
-    todayBudget = 0;
-  } else if (surplus >= 0) {
-    todayBudget = (todayProfile?.expectedSpend ?? 0) + (nonSafeDays > 0 ? surplus / nonSafeDays : 0);
-  } else {
-    todayBudget = (todayProfile?.expectedSpend ?? 0) * (totalExpectedSpend > 0 ? spendableBalance / totalExpectedSpend : 1);
-  }
-
-  const expensesToday = (expenses ?? []).filter(e => startOfDay(new Date(e.date)).getTime() === today.getTime());
-  const spentToday = expensesToday.reduce((s, e) => s + e.amount, 0);
-  const todayRemaining = Math.max(0, todayBudget - spentToday);
-  const isOverBudget = spentToday > todayBudget;
+  const billsReserved = engine.billsReserved;
+  const goalsReserved = engine.goalsReserved;
+  const spendableBalance = engine.spendableBalance;
+  const todayProfile = engine.todayProfile;
+  const isSafeDay = todayProfile.type === "safe";
+  const todayBudget = engine.safeLimit;
+  const spentToday = engine.spentToday;
+  const todayRemaining = Math.max(0, engine.remainingToday);
+  const isOverBudget = engine.isOverBudget;
 
   const now = new Date();
   const currentMonthExpenses = (expenses ?? []).filter(e => {
@@ -303,6 +285,7 @@ export default function AdvisorPage() {
   const { recurringBudgets } = useBudgetStore();
   const { profiles, weeklyPlan } = useProfileStore();
   const { goals } = useGoalStore();
+  const balance = useBalance();
 
   const currencySymbol = getCurrencySymbol(user?.currency);
   const hasGoals = goals.length > 0;
@@ -318,7 +301,7 @@ export default function AdvisorPage() {
     setResult(null);
     setErrorMsg(null);
 
-    const context = buildAIContext(user, income, expenses, recurringBudgets, profiles, weeklyPlan, goals);
+    const context = buildAIContext(user, income, expenses, recurringBudgets, profiles, weeklyPlan, goals, balance);
 
     try {
       const res = await fetch("/api/chat", {
@@ -329,8 +312,8 @@ export default function AdvisorPage() {
 
       const data = await res.json();
 
-      if (data.error) {
-        setErrorMsg(data.error);
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error || "An error occurred. Please try again.");
         return;
       }
 

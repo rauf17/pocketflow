@@ -2,6 +2,8 @@ import { Sidebar, BottomNav } from "@/components/Navigation";
 import { LivingFlow } from "@/components/LivingFlow";
 import { Gatekeeper, MobileHeader } from "@/components/Gatekeeper";
 import { NavigationTour } from "@/components/NavigationTour";
+import { Snackbar } from "@/components/Snackbar";
+import { ReminderManager } from "@/components/ReminderManager";
 
 export default function AppLayout({
   children,
@@ -33,6 +35,8 @@ export default function AppLayout({
         </main>
 
         <BottomNav />
+        <Snackbar />
+        <ReminderManager />
       </div>
     </Gatekeeper>
   );

@@ -6,7 +6,17 @@ export interface User {
   hostelDaysMode: boolean;
   isOnboarded: boolean;
   hasSeenTour?: boolean;
-  balance: number;
+  /** Balance at the start of the ledger. Current balance is derived, never stored. */
+  openingBalance: number;
+}
+
+/** Money coming in: paydays, manual income, and balance corrections (can be negative). */
+export interface Deposit {
+  id: string;
+  amount: number;
+  date: string; // ISO String
+  label: string;
+  kind: 'payday' | 'manual' | 'adjustment';
 }
 
 export interface Income {
@@ -21,6 +31,8 @@ export interface Category {
   name: string;
   icon: string;
   color: string;
+  /** Optional monthly spending cap for this category. */
+  monthlyLimit?: number;
 }
 
 export interface Expense {
@@ -72,4 +84,11 @@ export interface Goal {
   notes?: string;
   status: GoalStatus;
   createdAt: string;           // ISO String
+}
+
+export interface Favorite {
+  id: string;
+  description: string;
+  amount: number;
+  categoryId?: string;
 }

@@ -5,6 +5,9 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Plus, X, Trash2, Wallet, RefreshCcw, Edit2, Check } from "lucide-react";
 import { useBudgetStore } from "@/store/useBudgetStore";
 import { useUserStore } from "@/store/useUserStore";
+import { useExpenseStore } from "@/store/useExpenseStore";
+import { useSnackbarStore } from "@/store/useSnackbarStore";
+import { CategoryBudgets } from "@/components/CategoryBudgets";
 import { RecurringBudget } from "@/store/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +18,22 @@ export default function BudgetsPage() {
   const { recurringBudgets, removeRecurringBudget, addRecurringBudget, updateRecurringBudget, payRecurringBudget } = useBudgetStore();
   const { user } = useUserStore();
   const currencySymbol = getCurrencySymbol(user?.currency);
+  const showSnackbar = useSnackbarStore((s) => s.show);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handlePay = (id: string) => {
+    const result = payRecurringBudget(id);
+    if (!result) return;
+    showSnackbar({
+      message: "Payment logged",
+      actionLabel: "Undo",
+      onAction: () => {
+        // Remove the logged expense and put the due date back.
+        useExpenseStore.getState().removeExpense(result.expenseId);
+        updateRecurringBudget(id, { nextDueDate: result.previousDueDate });
+      },
+    });
+  };
 
   // Form State
   const [title, setTitle] = useState("");
@@ -184,7 +202,7 @@ export default function BudgetsPage() {
 
                       <Button
                         variant="glass"
-                        onClick={() => payRecurringBudget(budget.id)}
+                        onClick={() => handlePay(budget.id)}
                         className="w-full h-10 rounded-xl text-xs gap-2 font-medium hover:bg-flow-emerald/10 hover:text-flow-emerald hover:border-flow-emerald/30 transition-all mt-1"
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -198,6 +216,8 @@ export default function BudgetsPage() {
           )}
         </AnimatePresence>
       </div>
+
+      <CategoryBudgets />
 
       {/* Modern Overlay Modal */}
       <AnimatePresence>

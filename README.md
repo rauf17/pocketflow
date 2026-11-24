@@ -274,6 +274,9 @@ pocketflow/
 ## 🧪 Testing & Verification Commands
 
 ```bash
+# Run unit tests (budget engine, ledger, quick-entry parser, reminders, PIN, migration)
+npm test
+
 # Run TypeScript type safety check
 npx tsc --noEmit
 

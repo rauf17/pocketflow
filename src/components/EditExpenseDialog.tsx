@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useUserStore } from "@/store/useUserStore";
+import { useBudgetStore } from "@/store/useBudgetStore";
+import { useSnackbarStore } from "@/store/useSnackbarStore";
 import { getCurrencySymbol } from "@/lib/utils";
 import type { Expense } from "@/store/types";
 
@@ -38,19 +40,23 @@ interface EditExpenseDialogProps {
 }
 
 export function EditExpenseDialog({ expense, onOpenChange }: EditExpenseDialogProps) {
-  const { updateExpense, removeExpense } = useExpenseStore();
-  const { updateBalance, user } = useUserStore();
+  const { updateExpense, removeExpense, restoreExpense } = useExpenseStore();
+  const { user } = useUserStore();
+  const categories = useBudgetStore((s) => s.categories);
+  const showSnackbar = useSnackbarStore((s) => s.show);
   const currencySymbol = getCurrencySymbol(user?.currency);
 
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayStr());
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (expense) {
       setAmount(String(expense.amount));
       setDescription(expense.description);
       setDate(format(new Date(expense.date), DATE_FMT));
+      setCategoryId(expense.categoryId);
     }
   }, [expense]);
 
@@ -64,21 +70,36 @@ export function EditExpenseDialog({ expense, onOpenChange }: EditExpenseDialogPr
     const newAmount = Number(amount);
     if (!amount || isNaN(newAmount) || newAmount <= 0) return;
 
-    const balanceDelta = expense.amount - newAmount; // e.g. amount went down -> money comes back
-    if (balanceDelta !== 0) updateBalance(balanceDelta);
-
+    // The balance is derived from the ledger, so editing the amount adjusts it automatically.
+    const previous = expense;
     updateExpense(expense.id, {
       amount: newAmount,
       description: description || "Expense",
       date: toExpenseDate(date, expense.date),
+      categoryId,
+    });
+    showSnackbar({
+      message: "Expense updated",
+      actionLabel: "Undo",
+      onAction: () => updateExpense(previous.id, {
+        amount: previous.amount,
+        description: previous.description,
+        date: previous.date,
+        categoryId: previous.categoryId,
+      }),
     });
 
     onOpenChange(false);
   };
 
   const handleDelete = () => {
-    updateBalance(expense.amount); // give the money back
-    removeExpense(expense.id);
+    const removed = expense;
+    removeExpense(removed.id); // the balance is derived, so the money comes back automatically
+    showSnackbar({
+      message: "Expense deleted",
+      actionLabel: "Undo",
+      onAction: () => restoreExpense(removed),
+    });
     onOpenChange(false);
   };
 
@@ -110,6 +131,25 @@ export function EditExpenseDialog({ expense, onOpenChange }: EditExpenseDialogPr
             onChange={(e) => setDescription(e.target.value)}
             className="h-12 rounded-2xl border-white/5 bg-white/[0.02]"
           />
+
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoryId(categoryId === c.id ? undefined : c.id)}
+                  className={`px-3 h-8 rounded-full text-xs font-medium transition-all ${
+                    categoryId === c.id
+                      ? "bg-foreground text-background"
+                      : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">

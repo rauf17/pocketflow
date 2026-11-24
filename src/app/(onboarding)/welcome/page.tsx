@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Wallet, Calendar, DollarSign, School } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/utils";
+import { CURRENCIES } from "@/lib/currency";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function WelcomePage() {
 
   // Form State
   const [balance, setBalance] = useState("");
+  const [currency, setCurrency] = useState("PKR");
   const [incomeDate, setIncomeDate] = useState("");
   const [incomeAmount, setIncomeAmount] = useState("");
   const [hostelMode, setHostelMode] = useState(false);
@@ -45,7 +47,17 @@ export default function WelcomePage() {
       icon: <DollarSign className="w-12 h-12 text-foreground mb-6" />,
       content: (
         <div className="relative w-full max-w-xs mt-8">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-muted-foreground">{getCurrencySymbol("PKR")}</span>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            aria-label="Currency"
+            className="w-full h-12 mb-4 rounded-2xl bg-white/[0.02] border border-white/10 text-foreground px-4 text-sm focus:outline-none"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} ({c.symbol}) — {c.name}</option>
+            ))}
+          </select>
+          <span className="absolute left-4 bottom-[1.1rem] text-2xl text-muted-foreground">{getCurrencySymbol(currency)}</span>
           <Input
             autoFocus
             type="number"
@@ -72,7 +84,7 @@ export default function WelcomePage() {
             className="h-14 rounded-2xl border-white/10"
           />
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">{getCurrencySymbol("PKR")}</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">{getCurrencySymbol(currency)}</span>
             <Input
               type="number"
               placeholder="Amount"
@@ -119,10 +131,10 @@ export default function WelcomePage() {
       // Finalize Onboarding
       setUser({
         name: "User",
-        currency: "PKR",
+        currency,
         theme: "dark",
         hostelDaysMode: hostelMode,
-        balance: Number(balance),
+        openingBalance: Number(balance),
         isOnboarded: true
       });
       

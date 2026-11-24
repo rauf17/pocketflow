@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -36,18 +37,57 @@ RULES:
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, context, history } = await req.json();
+    // 1. Rate Limiting Check (before req.json() and before any Gemini call)
+    const forwardedFor = req.headers.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (req.headers.get('x-real-ip') || 'unknown');
+
+    const { ok, retryAfter } = await checkRateLimit(ip);
+    if (!ok) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${retryAfter} seconds.` },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(retryAfter) },
+        }
+      );
+    }
+
+    // 2. Body Parsing & Input Validation
+    let body: { message?: unknown; context?: unknown; history?: unknown };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON payload.' }, { status: 400 });
+    }
+
+    const { message, context, history } = body || {};
+
+    if (typeof message !== 'string' || message.trim().length < 1 || message.trim().length > 500) {
+      return NextResponse.json(
+        { error: 'Message must be a non-empty string under 500 characters.' },
+        { status: 400 }
+      );
+    }
+
+    if (context && JSON.stringify(context).length > 30000) {
+      return NextResponse.json(
+        { error: 'Context payload too large.' },
+        { status: 413 }
+      );
+    }
 
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'INSERT_YOUR_GEMINI_API_KEY_HERE') {
       return NextResponse.json(
-        { error: 'Missing Gemini API Key. Please add it to your .env.local file.' },
+        { error: 'Missing Gemini API Key. Please add it to your environment variables.' },
         { status: 500 }
       );
     }
 
-    const chatHistory = (history || []).map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'ai' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
+    // Sanitize and cap conversation history (last 6 items, max 1000 chars per item)
+    const safeHistory = Array.isArray(history) ? history.slice(-6) : [];
+    const chatHistory = safeHistory.map((msg: { role?: string; content?: string }) => ({
+      role: msg?.role === 'ai' ? 'model' : 'user',
+      parts: [{ text: typeof msg?.content === 'string' ? msg.content.slice(0, 1000) : '' }],
     }));
 
     const augmentedMessage = `
@@ -55,7 +95,7 @@ export async function POST(req: NextRequest) {
 ${JSON.stringify(context, null, 2)}
 [/FINANCIAL CONTEXT SNAPSHOT]
 
-User Question: ${message}
+User Question: ${message.trim()}
 
 Respond with valid JSON only.
 `;
@@ -102,7 +142,7 @@ Respond with valid JSON only.
   } catch (error: unknown) {
     console.error('Chat API Error:', error);
     return NextResponse.json(
-      { error: 'An error occurred while communicating with the AI.' },
+      { error: 'An error occurred while communicating with the AI co-pilot.' },
       { status: 500 }
     );
   }

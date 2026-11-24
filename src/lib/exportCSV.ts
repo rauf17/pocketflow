@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { getBalance } from "@/store/useBalance";
 import { useUserStore } from "@/store/useUserStore";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useBudgetStore } from "@/store/useBudgetStore";
@@ -9,7 +10,7 @@ import { useGoalStore } from "@/store/useGoalStore";
  * Escapes a single CSV field according to RFC 4180 rules.
  * Encloses the field in double quotes if it contains commas, double quotes, or newlines.
  */
-function escapeCSVField(val: unknown): string {
+export function escapeCSVField(val: unknown): string {
   if (val === null || val === undefined) return "";
   const str = String(val);
   if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
@@ -19,13 +20,27 @@ function escapeCSVField(val: unknown): string {
 }
 
 /**
+ * Safely formats a date value without throwing invalid date exceptions.
+ */
+export function formatDateSafe(dateVal: unknown, formatPattern: string): string {
+  if (!dateVal) return "";
+  try {
+    const d = new Date(dateVal as string | number | Date);
+    if (isNaN(d.getTime())) return String(dateVal);
+    return format(d, formatPattern);
+  } catch {
+    return String(dateVal);
+  }
+}
+
+/**
  * Exports all persisted user financial data to a robust, UTF-8 encoded CSV file.
  * Completely client-side read-only operation.
  */
 export function exportPocketFlowCSV(): void {
   if (typeof window === "undefined") return;
 
-  const { user, income } = useUserStore.getState();
+  const { user, income, deposits } = useUserStore.getState();
   const { expenses } = useExpenseStore.getState();
   const { recurringBudgets, categories } = useBudgetStore.getState();
   const { profiles, weeklyPlan } = useProfileStore.getState();
@@ -44,7 +59,7 @@ export function exportPocketFlowCSV(): void {
       user.id,
       user.name,
       user.currency,
-      user.balance,
+      getBalance(),
       user.theme,
       user.hostelDaysMode ? "Yes" : "No",
       user.isOnboarded ? "Yes" : "No"
@@ -57,9 +72,27 @@ export function exportPocketFlowCSV(): void {
   lines.push(["Next Payday Date", "Next Payday Amount"].map(escapeCSVField).join(","));
   if (income) {
     lines.push([
-      income.nextDate ? format(new Date(income.nextDate), "yyyy-MM-dd HH:mm:ss") : "",
+      formatDateSafe(income.nextDate, "yyyy-MM-dd HH:mm:ss"),
       income.amount
     ].map(escapeCSVField).join(","));
+  }
+  lines.push("");
+
+  // Section 2b: Income & balance ledger entries
+  lines.push("--- INCOME & CORRECTIONS ---");
+  lines.push(["Entry ID", "Date", "Label", "Kind", "Amount"].map(escapeCSVField).join(","));
+  if (deposits && deposits.length > 0) {
+    deposits.forEach((d) => {
+      lines.push([
+        d.id,
+        formatDateSafe(d.date, "yyyy-MM-dd HH:mm:ss"),
+        d.label,
+        d.kind,
+        d.amount
+      ].map(escapeCSVField).join(","));
+    });
+  } else {
+    lines.push("No recorded income entries.");
   }
   lines.push("");
 
@@ -71,8 +104,8 @@ export function exportPocketFlowCSV(): void {
       const categoryObj = categories?.find((c) => c.id === e.categoryId);
       lines.push([
         e.id,
-        e.date ? format(new Date(e.date), "yyyy-MM-dd HH:mm:ss") : "",
-        e.description,
+        formatDateSafe(e.date, "yyyy-MM-dd HH:mm:ss"),
+        e.description || "",
         e.amount,
         categoryObj ? categoryObj.name : (e.categoryId || "General")
       ].map(escapeCSVField).join(","));
@@ -92,7 +125,7 @@ export function exportPocketFlowCSV(): void {
         b.title,
         b.amount,
         b.frequency,
-        b.nextDueDate ? format(new Date(b.nextDueDate), "yyyy-MM-dd") : ""
+        formatDateSafe(b.nextDueDate, "yyyy-MM-dd")
       ].map(escapeCSVField).join(","));
     });
   } else {
@@ -113,7 +146,7 @@ export function exportPocketFlowCSV(): void {
         g.currentSaved,
         g.monthlyContribution,
         g.priority,
-        g.targetDate ? format(new Date(g.targetDate), "yyyy-MM-dd") : "",
+        formatDateSafe(g.targetDate, "yyyy-MM-dd"),
         g.status
       ].map(escapeCSVField).join(","));
     });
@@ -151,10 +184,10 @@ export function exportPocketFlowCSV(): void {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
 
-  const dateStr = format(new Date(), "yyyy-MM-dd");
+  const dateStr = formatDateSafe(new Date(), "yyyy-MM-dd");
   const a = document.createElement("a");
   a.href = url;
-  a.download = `pocketflow-export-${dateStr}.csv`;
+  a.download = `pocketflow-expenses-${dateStr}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

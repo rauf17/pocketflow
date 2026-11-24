@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { PocketFlowLogo } from "./PocketFlowLogo";
 import { PocketFlowLoader } from "./PocketFlowLoader";
+import { LockScreen } from "./LockScreen";
+import { useLockStore } from "@/store/useLockStore";
 
 export function Gatekeeper({ children }: { children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
@@ -13,6 +15,9 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isHydrated, setIsHydrated] = useState(false);
   const [animDone, setAnimDone] = useState(false);
+  const hasPin = useLockStore((s) => !!s.pinHash);
+  const locked = useLockStore((s) => s.locked);
+  const lock = useLockStore((s) => s.lock);
 
   useEffect(() => {
     let done = false;
@@ -44,6 +49,23 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
     }
   }, [isHydrated, user, router, pathname]);
 
+  // Re-lock after the app has been in the background long enough.
+  useEffect(() => {
+    if (!hasPin) return;
+    let hiddenAt: number | null = null;
+    const onChange = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+      } else if (hiddenAt !== null) {
+        const awayMs = Date.now() - hiddenAt;
+        hiddenAt = null;
+        if (awayMs >= useLockStore.getState().autoLockMinutes * 60_000) lock();
+      }
+    };
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, [hasPin, lock]);
+
   // Handle Theme
   useEffect(() => {
     const root = window.document.documentElement;
@@ -62,6 +84,10 @@ export function Gatekeeper({ children }: { children: React.ReactNode }) {
 
   if (!isHydrated || !animDone) {
     return <PocketFlowLoader onComplete={() => setAnimDone(true)} />;
+  }
+
+  if (hasPin && locked) {
+    return <LockScreen />;
   }
 
   return <>{children}</>;

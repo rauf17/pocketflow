@@ -2,10 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
-import { Plus, X, Calendar } from "lucide-react";
+import { Plus, X, Calendar, Star, Zap } from "lucide-react";
 import { format, subDays, set as setDateParts } from "date-fns";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useUserStore } from "@/store/useUserStore";
+import { useBudgetStore } from "@/store/useBudgetStore";
+import { useSnackbarStore } from "@/store/useSnackbarStore";
+import { parseQuickEntry } from "@/lib/quickEntry";
+import { categorySpentThisMonth, limitCrossingMessage } from "@/lib/categoryBudgets";
+import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getCurrencySymbol } from "@/lib/utils";
@@ -31,9 +36,14 @@ function toExpenseDate(pickedYMD: string): string {
 }
 
 export function ExpenseInput() {
-  const { addExpense } = useExpenseStore();
-  const { updateBalance, user } = useUserStore();
+  const { addExpense, removeExpense, favorites, addFavorite, removeFavorite } = useExpenseStore();
+  const { user, addDeposit, removeDeposit } = useUserStore();
+  const categories = useBudgetStore((s) => s.categories);
+  const showSnackbar = useSnackbarStore((s) => s.show);
   const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<"expense" | "income">("expense");
+  const [quick, setQuick] = useState("");
+  const [categoryId, setCategoryId] = useState<string | undefined>(undefined);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayStr());
@@ -48,7 +58,12 @@ export function ExpenseInput() {
   // The date must NEVER be remembered between visits — every time the
   // sheet opens, it defaults back to today.
   useEffect(() => {
-    if (isOpen) setDate(todayStr());
+    if (isOpen) {
+      setDate(todayStr());
+      setMode("expense");
+      setQuick("");
+      setCategoryId(undefined);
+    }
   }, [isOpen]);
 
   // Global Keyboard shortcut (Shift + N or Alt + N to open Expense modal safely without browser conflicts)
@@ -99,20 +114,66 @@ export function ExpenseInput() {
     
     // Trigger Success
     setIsSuccess(true);
-    
+
+    const value = Number(amount);
     setTimeout(() => {
-      addExpense({
-        amount: Number(amount),
-        description: description || "Expense",
-        date: toExpenseDate(date)
-      });
-      updateBalance(-Number(amount));
+      if (mode === "income") {
+        const id = addDeposit({
+          amount: value,
+          date: toExpenseDate(date),
+          label: description || "Income",
+          kind: "manual",
+        });
+        showSnackbar({
+          message: `Added ${formatMoney(value, user?.currency)} income`,
+          actionLabel: "Undo",
+          onAction: () => removeDeposit(id),
+        });
+      } else {
+        const category = categories.find((c) => c.id === categoryId);
+        const spentBefore = categoryId
+          ? categorySpentThisMonth(useExpenseStore.getState().expenses, categoryId)
+          : 0;
+        const id = addExpense({
+          amount: value,
+          description: description || "Expense",
+          date: toExpenseDate(date),
+          categoryId,
+        });
+        const warning = limitCrossingMessage(category, spentBefore, value, (n) => formatMoney(n, user?.currency));
+        showSnackbar({
+          message: warning ?? `Added ${formatMoney(value, user?.currency)} expense`,
+          tone: warning ? "warning" : "info",
+          actionLabel: "Undo",
+          onAction: () => removeExpense(id),
+        });
+      }
       setAmount("");
       setDescription("");
+      setQuick("");
       setIsOpen(false);
       setIsSuccess(false);
     }, 600);
   };
+
+  const applyQuick = (text: string) => {
+    setQuick(text);
+    const parsed = parseQuickEntry(text, categories);
+    if (!parsed) return;
+    setAmount(String(parsed.amount));
+    setDescription(parsed.description);
+    setCategoryId(parsed.categoryId);
+    setDate(format(subDays(new Date(), parsed.daysAgo), DATE_FMT));
+  };
+
+  const applyFavorite = (fav: { description: string; amount: number; categoryId?: string }) => {
+    setMode("expense");
+    setAmount(String(fav.amount));
+    setDescription(fav.description);
+    setCategoryId(fav.categoryId);
+  };
+
+  const canSaveFavorite = mode === "expense" && Number(amount) > 0 && description.trim().length > 0;
 
   return (
     <>
@@ -165,7 +226,20 @@ export function ExpenseInput() {
               className="w-full max-w-lg bg-card/60 backdrop-blur-3xl border border-white/10 rounded-t-[3rem] md:rounded-[3rem] p-8 shadow-2xl relative z-10 flex flex-col"
             >
               <div className="flex justify-between items-center mb-8">
-                <h3 className="text-2xl font-light tracking-tight text-foreground/90">Add Expense</h3>
+                <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04]">
+                  {(["expense", "income"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setMode(m)}
+                      className={`px-4 h-9 rounded-full text-sm font-medium capitalize transition-all ${
+                        mode === m ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
                 <Button 
                   variant="ghost" 
                   size="icon"
@@ -201,6 +275,44 @@ export function ExpenseInput() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                {mode === "expense" && (
+                  <div className="flex flex-col gap-3">
+                    <div className="relative">
+                      <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        type="text"
+                        placeholder='Quick add: "500 lunch" or "1.5k uber yesterday"'
+                        value={quick}
+                        onChange={(e) => applyQuick(e.target.value)}
+                        className="pl-11 h-12 rounded-2xl text-sm placeholder:text-muted-foreground/40 border-white/5 bg-white/[0.02]"
+                      />
+                    </div>
+                    {favorites.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {favorites.map((f) => (
+                          <span key={f.id} className="inline-flex items-center rounded-full bg-white/[0.04] border border-white/5 overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => applyFavorite(f)}
+                              className="pl-3 pr-2 h-8 text-xs font-medium text-foreground/80 hover:text-foreground"
+                            >
+                              {f.description} · {formatMoney(f.amount, user?.currency)}
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Remove favorite ${f.description}`}
+                              onClick={() => removeFavorite(f.id)}
+                              className="pr-2.5 pl-1 h-8 text-muted-foreground/50 hover:text-foreground"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <motion.div animate={controls} className="relative group">
                   <span className="absolute left-6 top-1/2 -translate-y-1/2 text-3xl font-light text-muted-foreground group-focus-within:text-foreground transition-colors">{currencySymbol}</span>
@@ -275,19 +387,52 @@ export function ExpenseInput() {
                 <div className="relative">
                   <Input
                     type="text"
-                    placeholder="What was this for?"
+                    placeholder={mode === "income" ? "Where is this from?" : "What was this for?"}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="text-xl font-light h-16 rounded-[1.5rem] placeholder:text-muted-foreground/30 border-white/5 bg-white/[0.02] focus-visible:bg-white/[0.05] focus-visible:ring-1 focus-visible:ring-white/20 px-6 transition-all"
+                    className="text-xl font-light h-16 rounded-[1.5rem] placeholder:text-muted-foreground/30 border-white/5 bg-white/[0.02] focus-visible:bg-white/[0.05] focus-visible:ring-1 focus-visible:ring-white/20 px-6 pr-14 transition-all"
                   />
+                  {canSaveFavorite && (
+                    <button
+                      type="button"
+                      title="Save as favorite"
+                      aria-label="Save as favorite"
+                      onClick={() => {
+                        addFavorite({ description: description.trim(), amount: Number(amount), categoryId });
+                        showSnackbar({ message: "Saved as a favorite" });
+                      }}
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-flow-amber transition-colors"
+                    >
+                      <Star className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
+
+                {mode === "expense" && categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setCategoryId(categoryId === c.id ? undefined : c.id)}
+                        className={`px-3.5 h-9 rounded-full text-xs font-medium transition-all ${
+                          categoryId === c.id
+                            ? "bg-foreground text-background"
+                            : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 
                 <Button
                   type="submit"
                   size="lg"
                   className="w-full mt-4 h-16 rounded-[1.5rem] font-medium text-lg bg-foreground text-background hover:scale-[1.02] transition-transform shadow-xl"
                 >
-                  Record Expense
+                  {mode === "income" ? "Record Income" : "Record Expense"}
                 </Button>
               </form>
             </motion.div>

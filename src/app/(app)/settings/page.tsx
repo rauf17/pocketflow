@@ -9,17 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Smartphone, Moon, Sun, Trash2, Download, CheckCircle2, Wallet, Shield, Settings2, Map, Plus, Edit2, Check, AlertCircle, Compass } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/utils";
+import { CURRENCIES } from "@/lib/currency";
+import { useBalance } from "@/store/useBalance";
+import { DeviceSettings } from "@/components/DeviceSettings";
 import { exportPocketFlowCSV } from "@/lib/exportCSV";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user, income, setUser, setIncome, setHasSeenTour } = useUserStore();
+  const { user, income, setUser, setIncome, setHasSeenTour, adjustBalanceTo } = useUserStore();
+  const currentBalance = useBalance();
   const { profiles, addProfile, deleteProfile, updateProfile } = useProfileStore();
   const activeCurrencySymbol = getCurrencySymbol(user?.currency);
 
   const [activeTab, setActiveTab] = useState<"general" | "financial" | "profiles" | "data">("general");
 
-  const [balance, setBalance] = useState(user?.balance?.toString() || "");
+  const [balance, setBalance] = useState(String(Math.round(currentBalance * 100) / 100));
   const [currency, setCurrency] = useState(user?.currency || "PKR");
   const [theme, setTheme] = useState(user?.theme || "dark");
   const [incomeAmount, setIncomeAmount] = useState(income?.amount?.toString() || "");
@@ -37,10 +41,14 @@ export default function SettingsPage() {
     if (user) {
       setUser({
         ...user,
-        balance: Number(balance),
-        currency: currency as "PKR" | "USD" | "EUR" | "GBP",
+        currency,
         theme: theme as "dark" | "light" | "system",
       });
+      // The balance is derived from the ledger, so a manual change is recorded as a
+      // visible "Balance correction" entry instead of silently rewriting history.
+      if (balance !== "" && !isNaN(Number(balance))) {
+        adjustBalanceTo(Number(balance), currentBalance);
+      }
     }
     if (income) {
       setIncome({
@@ -235,10 +243,11 @@ export default function SettingsPage() {
                       onChange={(e) => setCurrency(e.target.value)}
                       className="w-full h-14 rounded-[1.25rem] bg-white/[0.02] border-white/10 text-foreground px-4 appearance-none focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
                     >
-                      <option value="PKR">PKR (Rs)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
+                      {CURRENCIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.code} ({c.symbol}) — {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -400,9 +409,13 @@ export default function SettingsPage() {
                 className="flex flex-col gap-8"
               >
                 <div className="flex flex-col gap-2">
-                  <h3 className="text-lg font-medium text-foreground/90">Danger Zone</h3>
-                  <p className="text-sm text-muted-foreground">Manage your local data.</p>
+                  <h3 className="text-lg font-medium text-foreground/90">Data Backup & Privacy</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    PocketFlow stores all financial data locally in your browser. Export a local CSV backup to save your expense records, budgets, and preferences to your device.
+                  </p>
                 </div>
+
+                <DeviceSettings />
 
                 <div className="flex flex-col gap-4 max-w-sm">
                   <Button 
@@ -413,7 +426,7 @@ export default function SettingsPage() {
                     {exportState === "success" ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 mr-3 text-flow-emerald" />
-                        <span className="text-flow-emerald">Data Exported Successfully</span>
+                        <span className="text-flow-emerald">Backup Exported Successfully</span>
                       </>
                     ) : exportState === "error" ? (
                       <>
@@ -423,7 +436,7 @@ export default function SettingsPage() {
                     ) : (
                       <>
                         <Download className="w-4 h-4 mr-3 text-muted-foreground" />
-                        Export Data (CSV)
+                        Export CSV Backup
                       </>
                     )}
                   </Button>
