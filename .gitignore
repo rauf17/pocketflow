@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local env (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# local tooling and scratch
+/.claude/
+/scratch/
