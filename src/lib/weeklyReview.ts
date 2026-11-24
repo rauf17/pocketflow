@@ -7,6 +7,8 @@ export interface ReviewDay {
   planned: number;
   actual: number;
   profileName: string;
+  /** False for days before the first recorded expense — the user wasn't tracking yet. */
+  tracked: boolean;
 }
 
 export interface ProfileSuggestion {
@@ -63,6 +65,12 @@ export function buildWeeklyReview({
     spentByDay.set(k, (spentByDay.get(k) ?? 0) + e.amount);
   }
 
+  // Days before the first expense don't count: a new user hasn't "underspent" them.
+  const firstTracked = expenses.reduce((min, e) => {
+    const t = new Date(e.date);
+    return isNaN(t.getTime()) ? min : Math.min(min, startOfDay(t).getTime());
+  }, today.getTime());
+
   // The last 7 days, oldest first
   const days: ReviewDay[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -74,11 +82,13 @@ export function buildWeeklyReview({
       planned,
       actual: spentByDay.get(dayKey(date)) ?? 0,
       profileName: profile?.name ?? 'Day',
+      tracked: date.getTime() >= firstTracked,
     });
   }
 
-  const totalPlanned = days.reduce((s, d) => s + d.planned, 0);
-  const totalActual = days.reduce((s, d) => s + d.actual, 0);
+  const trackedDays = days.filter((d) => d.tracked);
+  const totalPlanned = trackedDays.reduce((s, d) => s + d.planned, 0);
+  const totalActual = trackedDays.reduce((s, d) => s + d.actual, 0);
 
   // Top category over the week
   const weekStart = days[0].date.getTime();
@@ -98,9 +108,15 @@ export function buildWeeklyReview({
     }
   });
 
-  // Suggestions: compare each weekday's profile to the last 4 weeks of that weekday
+  // Suggestions: compare each weekday's profile to the last 4 weeks of that weekday.
+  // Needs real history — a new user's empty past is not "you spend nothing on Fridays".
   const suggestions: ProfileSuggestion[] = [];
-  for (let weekday = 0; weekday < 7; weekday++) {
+  const earliest = expenses.reduce((min, e) => {
+    const t = new Date(e.date).getTime();
+    return isNaN(t) ? min : Math.min(min, t);
+  }, Infinity);
+  const hasHistory = isFinite(earliest) && earliest <= subDays(today, 14).getTime() && expenses.length >= 8;
+  for (let weekday = 0; hasHistory && weekday < 7; weekday++) {
     const profile = profiles.find((p) => p.id === weeklyPlan[weekday]);
     if (!profile) continue;
 
@@ -140,8 +156,8 @@ export function buildWeeklyReview({
     totalPlanned,
     totalActual,
     variance: totalActual - totalPlanned,
-    overDays: days.filter((d) => d.planned > 0 && d.actual > d.planned).length,
-    noSpendDays: days.filter((d) => d.actual === 0).length,
+    overDays: trackedDays.filter((d) => d.planned > 0 && d.actual > d.planned).length,
+    noSpendDays: trackedDays.filter((d) => d.actual === 0).length,
     topCategory,
     suggestions,
   };

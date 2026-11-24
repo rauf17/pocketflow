@@ -141,6 +141,16 @@ Respond with valid JSON only.
     return NextResponse.json({ response: parsed });
   } catch (error: unknown) {
     console.error('Chat API Error:', error);
+
+    // Upstream quota / overload: tell the user to retry instead of a vague failure.
+    const upstreamStatus = (error as { status?: number } | null)?.status;
+    if (upstreamStatus === 429 || upstreamStatus === 503) {
+      return NextResponse.json(
+        { error: 'The AI co-pilot is busy right now. Please try again in a minute.' },
+        { status: 503, headers: { 'Retry-After': '30' } }
+      );
+    }
+
     return NextResponse.json(
       { error: 'An error occurred while communicating with the AI co-pilot.' },
       { status: 500 }

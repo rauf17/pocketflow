@@ -272,11 +272,12 @@ export default function ExpensesPage() {
                             {currencySymbol}{expense.amount.toFixed(2)}
                           </span>
                           
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                          <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-all">
                             <Button 
                               variant="ghost" 
                               size="icon" 
                               onClick={() => setEditingExpense(expense)}
+                              aria-label={`Edit ${expense.description}`}
                               className="text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl w-10 h-10"
                             >
                               <Pencil className="w-4 h-4" />
@@ -285,6 +286,7 @@ export default function ExpensesPage() {
                               variant="ghost" 
                               size="icon" 
                               onClick={() => handleDelete(expense)}
+                              aria-label={`Delete ${expense.description}`}
                               className="text-destructive/50 hover:text-destructive hover:bg-destructive/10 rounded-xl w-10 h-10"
                             >
                               <Trash2 className="w-4 h-4" />

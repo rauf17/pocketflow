@@ -136,8 +136,15 @@ export default function AnalyticsPage() {
     let checkDate = startOfDay(today);
     let isStreakActive = true;
 
+    // Days before the first recorded expense are not "days within budget" — the user
+    // wasn't tracking yet — so the streak can never reach back past that day.
+    const firstTracked = expenses.reduce((min, e) => {
+      const t = startOfDay(new Date(e.date)).getTime();
+      return isNaN(t) ? min : Math.min(min, t);
+    }, Infinity);
+
     // Check consecutive days starting from today going backward
-    while (isStreakActive) {
+    while (isStreakActive && checkDate.getTime() >= firstTracked) {
       const key = formatISO(checkDate, { representation: 'date' });
       const spentOnDay = expensesByDate[key] || 0;
       const limitOnDay = getDailySafeLimit(checkDate);

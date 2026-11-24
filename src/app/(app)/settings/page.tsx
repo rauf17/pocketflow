@@ -8,7 +8,7 @@ import { useProfileStore } from "@/store/useProfileStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Smartphone, Moon, Sun, Trash2, Download, CheckCircle2, Wallet, Shield, Settings2, Map, Plus, Edit2, Check, AlertCircle, Compass } from "lucide-react";
-import { getCurrencySymbol } from "@/lib/utils";
+import { getCurrencySymbol, isoToYMD, ymdToLocalISO } from "@/lib/utils";
 import { CURRENCIES } from "@/lib/currency";
 import { useBalance } from "@/store/useBalance";
 import { DeviceSettings } from "@/components/DeviceSettings";
@@ -24,10 +24,11 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"general" | "financial" | "profiles" | "data">("general");
 
   const [balance, setBalance] = useState(String(Math.round(currentBalance * 100) / 100));
+  const [initialBalance, setInitialBalance] = useState(balance);
   const [currency, setCurrency] = useState(user?.currency || "PKR");
   const [theme, setTheme] = useState(user?.theme || "dark");
   const [incomeAmount, setIncomeAmount] = useState(income?.amount?.toString() || "");
-  const [incomeDate, setIncomeDate] = useState(income?.nextDate ? new Date(income.nextDate).toISOString().split('T')[0] : "");
+  const [incomeDate, setIncomeDate] = useState(income?.nextDate ? isoToYMD(income.nextDate) : "");
   const [incomeFrequency, setIncomeFrequency] = useState<"monthly" | "bi-weekly" | "weekly" | "semester">(income?.frequency || "monthly");
   
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
@@ -46,15 +47,19 @@ export default function SettingsPage() {
       });
       // The balance is derived from the ledger, so a manual change is recorded as a
       // visible "Balance correction" entry instead of silently rewriting history.
-      if (balance !== "" && !isNaN(Number(balance))) {
+      // Only when the field was actually edited: the box is filled once on load, so
+      // saving other settings must not "correct" the balance back to a stale number.
+      const edited = balance !== initialBalance;
+      if (edited && balance !== "" && !isNaN(Number(balance))) {
         adjustBalanceTo(Number(balance), currentBalance);
+        setInitialBalance(balance);
       }
     }
     if (income) {
       setIncome({
         ...income,
         amount: Number(incomeAmount),
-        nextDate: new Date(incomeDate).toISOString(),
+        nextDate: ymdToLocalISO(incomeDate),
         frequency: incomeFrequency,
       });
     }

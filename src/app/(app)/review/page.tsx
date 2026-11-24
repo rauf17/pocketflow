@@ -13,7 +13,7 @@ import { buildWeeklyReview } from "@/lib/weeklyReview";
 import { formatMoney } from "@/lib/currency";
 import { Input } from "@/components/ui/input";
 
-export default function InsightsPage() {
+export default function ReviewPage() {
   const currency = useUserStore((s) => s.user?.currency);
   const input = useEngineInput();
   const expenses = useExpenseStore((s) => s.expenses);
@@ -95,7 +95,7 @@ export default function InsightsPage() {
     <div className="flex flex-col w-full max-w-4xl mx-auto pt-16 px-6 pb-32 gap-16">
       <header>
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h2 className="text-3xl font-light tracking-tight">Insights</h2>
+          <h2 className="text-3xl font-light tracking-tight">Review &amp; What-if</h2>
           <p className="text-sm text-muted-foreground mt-2">Look back at your week, and test decisions before you make them.</p>
         </motion.div>
       </header>
@@ -194,7 +194,7 @@ export default function InsightsPage() {
                 <div className="flex items-end gap-1 w-full h-full justify-center">
                   <div
                     className="w-1/3 max-w-3 rounded-t bg-white/15"
-                    style={{ height: `${(d.planned / maxBar) * 100}%` }}
+                    style={{ height: `${(d.tracked ? d.planned / maxBar : 0) * 100}%` }}
                     title={`Planned ${money(d.planned)}`}
                   />
                   <div

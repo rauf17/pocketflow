@@ -151,16 +151,28 @@ describe('billOccurrencesUntil', () => {
   it('counts a weekly bill once per occurrence before the deadline', () => {
     const weekly = bill({ frequency: 'weekly', nextDueDate: iso(2026, 3, 3) });
     // due 3rd, 10th, 17th, 24th → deadline 25th = 4
-    expect(billOccurrencesUntil(weekly, new Date(2026, 2, 25))).toBe(4);
+    expect(billOccurrencesUntil(weekly, new Date(2026, 2, 25), monday)).toBe(4);
   });
 
-  it('counts an overdue bill at least once', () => {
-    const overdue = bill({ nextDueDate: iso(2026, 1, 1) });
-    expect(billOccurrencesUntil(overdue, new Date(2026, 2, 5))).toBeGreaterThanOrEqual(1);
+  it('counts a long-overdue bill once, not once per missed cycle', () => {
+    // monthly rent forgotten since January: owe it once now, plus the Mar 5 cycle? No —
+    // stepping forward from Jan 1 lands on Mar 1 (<= Mar 5), which is a real upcoming cycle.
+    const overdue = bill({ nextDueDate: iso(2025, 1, 1) });
+    const today = new Date(2026, 2, 2);
+    // 1 overdue payment + the cycle falling on Mar 1? Mar 1 < Mar 2 is consumed by catch-up,
+    // next due is Apr 1, after the Mar 5 deadline → exactly 1.
+    expect(billOccurrencesUntil(overdue, new Date(2026, 2, 5), today)).toBe(1);
+  });
+
+  it('an overdue weekly bill reserves the overdue payment plus upcoming ones', () => {
+    const overdueWeekly = bill({ frequency: 'weekly', nextDueDate: iso(2026, 2, 1) });
+    const today = new Date(2026, 2, 2); // Mon
+    // catch-up lands on Mar 8; deadline Mar 20 → Mar 8, 15 = 2, plus the overdue one = 3
+    expect(billOccurrencesUntil(overdueWeekly, new Date(2026, 2, 20), today)).toBe(3);
   });
 
   it('counts nothing when the first due date is after the deadline', () => {
-    expect(billOccurrencesUntil(bill({ nextDueDate: iso(2026, 4, 1) }), new Date(2026, 2, 5))).toBe(0);
+    expect(billOccurrencesUntil(bill({ nextDueDate: iso(2026, 4, 1) }), new Date(2026, 2, 5), monday)).toBe(0);
   });
 
   it('reserves a weekly bill more than once in the engine', () => {

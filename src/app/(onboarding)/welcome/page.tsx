@@ -8,7 +8,7 @@ import { useBudgetStore } from "@/store/useBudgetStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Wallet, Calendar, DollarSign, School } from "lucide-react";
-import { getCurrencySymbol } from "@/lib/utils";
+import { getCurrencySymbol, ymdToLocalISO } from "@/lib/utils";
 import { CURRENCIES } from "@/lib/currency";
 
 export default function WelcomePage() {
@@ -141,7 +141,7 @@ export default function WelcomePage() {
       setIncome({
         id: crypto.randomUUID(),
         amount: Number(incomeAmount),
-        nextDate: new Date(incomeDate).toISOString(),
+        nextDate: ymdToLocalISO(incomeDate),
         frequency: "monthly"
       });
 

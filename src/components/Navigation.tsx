@@ -19,7 +19,7 @@ const navItems = [
   { name: "Budgets",    href: "/budgets",   icon: Clock },
   { name: "Goals",      href: "/goals",     icon: Target },
   { name: "Analytics",  href: "/analytics", icon: PieChart },
-  { name: "Insights",   href: "/insights",  icon: Lightbulb },
+  { name: "Review",     href: "/review",    icon: Lightbulb },
   { name: "Advisor",    href: "/advisor",   icon: Brain },
   { name: "Settings",   href: "/settings",  icon: Settings },
 ];
@@ -159,7 +159,7 @@ export function BottomNav() {
   
   // Primary 4 items + "More" toggle for mobile
   const primaryMobileItems = [navItems[0], navItems[1], navItems[4], navItems[7]]; // Dashboard, Planner, Goals, Advisor
-  const overflowItems = [navItems[2], navItems[3], navItems[5], navItems[6], navItems[8]]; // Expenses, Budgets, Analytics, Insights, Settings
+  const overflowItems = [navItems[2], navItems[3], navItems[5], navItems[6], navItems[8]]; // Expenses, Budgets, Analytics, Review, Settings
 
   const isOverflowActive = overflowItems.some((item) => pathname.startsWith(item.href));
 

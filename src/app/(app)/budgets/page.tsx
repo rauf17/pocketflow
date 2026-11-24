@@ -11,7 +11,7 @@ import { CategoryBudgets } from "@/components/CategoryBudgets";
 import { RecurringBudget } from "@/store/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getCurrencySymbol } from "@/lib/utils";
+import { getCurrencySymbol, isoToYMD, ymdToLocalISO } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
 
 export default function BudgetsPage() {
@@ -46,7 +46,7 @@ export default function BudgetsPage() {
     setTitle(budget.title);
     setAmount(budget.amount.toString());
     setFrequency(budget.frequency);
-    setNextDate(new Date(budget.nextDueDate).toISOString().split('T')[0]);
+    setNextDate(isoToYMD(budget.nextDueDate));
     setEditingBudgetId(budget.id);
     setIsModalOpen(true);
   };
@@ -60,14 +60,14 @@ export default function BudgetsPage() {
         title,
         amount: Number(amount),
         frequency,
-        nextDueDate: new Date(nextDate).toISOString()
+        nextDueDate: ymdToLocalISO(nextDate)
       });
     } else {
       addRecurringBudget({
         title,
         amount: Number(amount),
         frequency,
-        nextDueDate: new Date(nextDate).toISOString()
+        nextDueDate: ymdToLocalISO(nextDate)
       });
     }
 

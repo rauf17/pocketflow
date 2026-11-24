@@ -223,7 +223,7 @@ export function ExpenseInput() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
-              className="w-full max-w-lg bg-card/60 backdrop-blur-3xl border border-white/10 rounded-t-[3rem] md:rounded-[3rem] p-8 shadow-2xl relative z-10 flex flex-col"
+              className="w-full max-w-lg bg-card/60 backdrop-blur-3xl border border-white/10 rounded-t-[3rem] md:rounded-[3rem] p-6 md:p-8 shadow-2xl relative z-10 flex flex-col max-h-[92dvh] overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-8">
                 <div className="flex items-center gap-1 p-1 rounded-full bg-white/[0.04]">
@@ -282,7 +282,7 @@ export function ExpenseInput() {
                       <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                       <Input
                         type="text"
-                        placeholder='Quick add: "500 lunch" or "1.5k uber yesterday"'
+                        placeholder='Quick add: "500 lunch"'
                         value={quick}
                         onChange={(e) => applyQuick(e.target.value)}
                         className="pl-11 h-12 rounded-2xl text-sm placeholder:text-muted-foreground/40 border-white/5 bg-white/[0.02]"

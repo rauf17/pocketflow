@@ -97,5 +97,16 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  /* Native dropdown lists ignore the transparent control background and inherit
+     the (light) text colour, which made options unreadable on a white popup. */
+  select option,
+  select optgroup {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
   }
 }

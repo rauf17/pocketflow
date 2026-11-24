@@ -94,22 +94,42 @@ describe('buildWeeklyReview', () => {
   it('totals planned vs actual over 7 days', () => {
     const r = buildWeeklyReview({
       now, profiles, weeklyPlan: plan, categories: DEFAULT_CATEGORIES,
-      expenses: [exp(500, 0, '1'), exp(100, 1, '1'), exp(900, 2, '2')],
+      expenses: [exp(500, 0, '1'), exp(100, 1, '1'), exp(900, 2, '2'), exp(1, 6, '1')],
     });
     expect(r.days).toHaveLength(7);
     expect(r.totalPlanned).toBe(2800);
-    expect(r.totalActual).toBe(1500);
-    expect(r.variance).toBe(-1300);
+    expect(r.totalActual).toBe(1501);
+    expect(r.variance).toBe(-1299);
     expect(r.overDays).toBe(2); // 500>400 and 900>400
-    expect(r.noSpendDays).toBe(4);
-    expect(r.topCategory?.name).toBe('Transport'); // 900 vs 600 for Food
+    expect(r.noSpendDays).toBe(3);
+    expect(r.topCategory?.name).toBe('Transport'); // 900 vs 601 for Food
+  });
+
+  it('gives no suggestions to a brand-new user with no history', () => {
+    const r = buildWeeklyReview({ now, profiles, weeklyPlan: plan, categories: [], expenses: [] });
+    expect(r.suggestions).toHaveLength(0);
+    const fresh = buildWeeklyReview({ now, profiles, weeklyPlan: plan, categories: [], expenses: [exp(100, 0), exp(50, 1)] });
+    expect(fresh.suggestions).toHaveLength(0);
   });
 
   it('suggests lowering a profile that is consistently overestimated', () => {
-    // never spend anything for 4 weeks while planning 400/day
-    const r = buildWeeklyReview({ now, profiles, weeklyPlan: plan, categories: [], expenses: [] });
+    // 10 tiny expenses spread over 4 weeks while planning 400/day
+    const expenses = Array.from({ length: 10 }, (_, i) => exp(10, i * 3 + 1));
+    const r = buildWeeklyReview({ now, profiles, weeklyPlan: plan, categories: [], expenses });
     expect(r.suggestions.length).toBeGreaterThan(0);
     expect(r.suggestions[0].direction).toBe('lower');
+  });
+
+  it('does not count days before the first recorded expense', () => {
+    const r = buildWeeklyReview({
+      now, profiles, weeklyPlan: plan, categories: [], expenses: [exp(100, 1), exp(50, 0)],
+    });
+    expect(r.days.filter((d) => d.tracked)).toHaveLength(2);
+    expect(r.totalPlanned).toBe(800); // 2 tracked days x 400, not 7 x 400
+    expect(r.noSpendDays).toBe(0);
+    // a brand-new user with nothing logged is tracked from today only
+    const none = buildWeeklyReview({ now, profiles, weeklyPlan: plan, categories: [], expenses: [] });
+    expect(none.totalPlanned).toBe(400);
   });
 
   it('ignores expenses outside the week', () => {
@@ -117,5 +137,17 @@ describe('buildWeeklyReview', () => {
       now, profiles, weeklyPlan: plan, categories: [], expenses: [exp(9999, 20)],
     });
     expect(r.totalActual).toBe(0);
+  });
+});
+
+describe('timezone-safe date helpers', () => {
+  it('round-trips a calendar day without shifting it', async () => {
+    const { ymdToLocalISO, isoToYMD } = await import('../utils');
+    for (const ymd of ['2026-03-05', '2026-01-01', '2026-12-31', '2028-02-29']) {
+      expect(isoToYMD(ymdToLocalISO(ymd))).toBe(ymd);
+    }
+    // local midnight of that day
+    expect(new Date(ymdToLocalISO('2026-03-05')).getDate()).toBe(5);
+    expect(isoToYMD('not a date')).toBe('');
   });
 });

@@ -11,6 +11,7 @@ import {
   addWeeks,
   differenceInDays,
   isAfter,
+  isBefore,
   startOfDay,
 } from 'date-fns';
 import type { DayProfile, Goal, RecurringBudget } from '@/store/types';
@@ -93,6 +94,7 @@ export function reservedForGoals(goals: Goal[]): number {
 // ─── Recurring bills ────────────────────────────────────────────────────────
 
 const MAX_OCCURRENCES = 100;
+const MAX_CATCHUP_STEPS = 5000;
 
 function advanceDue(date: Date, frequency: RecurringBudget['frequency']): Date {
   switch (frequency) {
@@ -109,16 +111,29 @@ function advanceDue(date: Date, frequency: RecurringBudget['frequency']): Date {
 }
 
 /**
- * How many times a bill falls due on or before `deadline`. An overdue bill
- * counts once for the missed payment, plus every later occurrence up to the
- * deadline (a weekly bill with a 3-week gap to payday reserves 3×, not 1×).
+ * How many payments a bill needs reserved before `deadline`. A bill that is
+ * already overdue counts ONCE for what is owed now (a rent bill forgotten for a
+ * year does not reserve twelve months), plus every occurrence from today up to
+ * the deadline (a weekly bill with 3 weeks to payday reserves 3×, not 1×).
  */
-export function billOccurrencesUntil(bill: RecurringBudget, deadline: Date): number {
+export function billOccurrencesUntil(
+  bill: RecurringBudget,
+  deadline: Date,
+  today: Date = new Date(),
+): number {
   const end = startOfDay(deadline);
+  const start = startOfDay(today);
   let due = startOfDay(new Date(bill.nextDueDate));
   if (isNaN(due.getTime())) return 0;
 
   let count = 0;
+  if (isBefore(due, start)) {
+    count = 1; // the overdue payment
+    let steps = 0;
+    while (isBefore(due, start) && steps++ < MAX_CATCHUP_STEPS) {
+      due = startOfDay(advanceDue(due, bill.frequency));
+    }
+  }
   while (!isAfter(due, end) && count < MAX_OCCURRENCES) {
     count++;
     due = startOfDay(advanceDue(due, bill.frequency));
@@ -126,8 +141,8 @@ export function billOccurrencesUntil(bill: RecurringBudget, deadline: Date): num
   return count;
 }
 
-export function reservedForBills(bills: RecurringBudget[], deadline: Date): number {
-  return bills.reduce((sum, b) => sum + b.amount * billOccurrencesUntil(b, deadline), 0);
+export function reservedForBills(bills: RecurringBudget[], deadline: Date, today: Date = new Date()): number {
+  return bills.reduce((sum, b) => sum + b.amount * billOccurrencesUntil(b, deadline, today), 0);
 }
 
 // ─── Engine ─────────────────────────────────────────────────────────────────
@@ -166,7 +181,7 @@ export function computeBudget(input: EngineInput): EngineResult {
   const daysUntilIncome = Math.max(0, differenceInDays(paydayDate, today));
 
   // Reserved money
-  const billsReserved = reservedForBills(bills, paydayDate);
+  const billsReserved = reservedForBills(bills, paydayDate, today);
   const goalsReserved = reservedForGoals(goals);
   const rawSpendable = balance - billsReserved - goalsReserved;
   const spendableBalance = Math.max(0, rawSpendable);

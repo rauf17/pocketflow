@@ -5,7 +5,7 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Plus, X, Trash2, Target, Edit2, Shield, Coffee, Briefcase, ShoppingBag, Zap, Plane, Laptop, Car, GraduationCap, Heart, Home, Star } from "lucide-react";
 import { useGoalStore, computeCompletionDate, PRIORITY_ORDER } from "@/store/useGoalStore";
 import { useUserStore } from "@/store/useUserStore";
-import { getCurrencySymbol } from "@/lib/utils";
+import { getCurrencySymbol, isoToYMD, ymdToLocalISO } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
@@ -175,7 +175,7 @@ function GoalModal({
   const [targetAmount, setTargetAmount] = useState(initial?.targetAmount?.toString() ?? "");
   const [currentSaved, setCurrentSaved] = useState(initial?.currentSaved?.toString() ?? "0");
   const [monthlyContribution, setMonthlyContribution] = useState(initial?.monthlyContribution?.toString() ?? "");
-  const [targetDate, setTargetDate] = useState(initial?.targetDate ? new Date(initial.targetDate).toISOString().split("T")[0] : "");
+  const [targetDate, setTargetDate] = useState(initial?.targetDate ? isoToYMD(initial.targetDate) : "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -189,7 +189,7 @@ function GoalModal({
       targetAmount: Number(targetAmount),
       currentSaved: Number(currentSaved),
       monthlyContribution: Number(monthlyContribution) || 0,
-      targetDate: targetDate ? new Date(targetDate).toISOString() : undefined,
+      targetDate: targetDate ? ymdToLocalISO(targetDate) : undefined,
       notes: notes || undefined,
     });
     onClose();
