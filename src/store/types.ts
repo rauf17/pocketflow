@@ -8,6 +8,8 @@ export interface User {
   hasSeenTour?: boolean;
   /** Balance at the start of the ledger. Current balance is derived, never stored. */
   openingBalance: number;
+  /** True while the app holds generated sample data (see src/lib/demo.ts). */
+  isDemo?: boolean;
 }
 
 /** Money coming in: paydays, manual income, and balance corrections (can be negative). */

@@ -7,7 +7,8 @@ import { useUserStore } from "@/store/useUserStore";
 import { useBudgetStore } from "@/store/useBudgetStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Wallet, Calendar, DollarSign, School } from "lucide-react";
+import { ArrowRight, Wallet, Calendar, DollarSign, School, Sparkles } from "lucide-react";
+import { seedDemoData } from "@/lib/demo";
 import { getCurrencySymbol, ymdToLocalISO } from "@/lib/utils";
 import { CURRENCIES } from "@/lib/currency";
 
@@ -36,6 +37,17 @@ export default function WelcomePage() {
           <p className="text-xs text-muted-foreground/70 tracking-wide font-medium">
             Know today&apos;s limit. Protect tomorrow&apos;s goals.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              seedDemoData();
+              router.replace("/dashboard");
+            }}
+            className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-foreground/80 hover:bg-white/10 hover:text-foreground transition-colors min-h-[44px]"
+          >
+            <Sparkles className="w-4 h-4 text-flow-emerald" />
+            Explore with sample data
+          </button>
         </div>
       ),
       isValid: () => true,

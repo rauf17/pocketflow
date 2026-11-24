@@ -332,7 +332,7 @@ export default function AnalyticsPage() {
           <div className="mt-auto">
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-light text-foreground">{streak}</span>
-              <span className="text-xl text-muted-foreground font-light">days</span>
+              <span className="text-xl text-muted-foreground font-light">{streak === 1 ? "day" : "days"}</span>
             </div>
             <span className="text-sm text-muted-foreground mt-2 block">
               {streak > 0

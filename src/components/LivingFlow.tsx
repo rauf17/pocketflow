@@ -4,6 +4,8 @@ import { motion, useAnimation } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { useExpenseStore } from "@/store/useExpenseStore";
 import { useBudget } from "@/store/useBudget";
+import { useUserStore } from "@/store/useUserStore";
+import { getCurrencySymbol } from "@/lib/currency";
 
 // ─── DayNode type (exported so dashboard can build trajectory) ────────────────
 export interface DayNode {
@@ -64,7 +66,7 @@ function selectNodes(trajectory: DayNode[]): Array<{ node: DayNode; t: number }>
 }
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
-function NodeTooltip({ node, x, y }: { node: DayNode; x: number; y: number }) {
+function NodeTooltip({ node, x, y, sym }: { node: DayNode; x: number; y: number; sym: string }) {
   const isLeft = x < 20;
   const isRight = x > 80;
   const translateX = isLeft ? "0%" : isRight ? "-100%" : "-50%";
@@ -101,16 +103,16 @@ function NodeTooltip({ node, x, y }: { node: DayNode; x: number; y: number }) {
         <div className="flex flex-col gap-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Safe Limit</span>
-            <span className="text-foreground font-medium">Rs{node.safeLimit.toLocaleString()}</span>
+            <span className="text-foreground font-medium">{sym}{node.safeLimit.toLocaleString()}</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">{node.isToday ? "Spent" : "Expected"}</span>
-            <span className="text-foreground font-medium">Rs{node.projectedSpend.toLocaleString()}</span>
+            <span className="text-foreground font-medium">{sym}{node.projectedSpend.toLocaleString()}</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Remaining</span>
             <span className={`font-medium ${node.remaining < 0 ? "text-flow-amber" : "text-foreground"}`}>
-              {node.remaining < 0 ? "-" : ""}Rs{Math.abs(node.remaining).toLocaleString()}
+              {node.remaining < 0 ? "-" : ""}{sym}{Math.abs(node.remaining).toLocaleString()}
             </span>
           </div>
         </div>
@@ -132,6 +134,7 @@ export function LivingFlow({
 }) {
   const { expenses } = useExpenseStore();
   const budget = useBudget();
+  const sym = getCurrencySymbol(useUserStore((s) => s.user?.currency));
   const [mounted, setMounted] = useState(false);
   const [hoveredNodeIdx, setHoveredNodeIdx] = useState<number | null>(null);
 
@@ -139,6 +142,13 @@ export function LivingFlow({
   const prevExpensesLength = useRef(expenses.length);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // On touch screens there is no mouseleave, so a tapped tooltip closes itself.
+  useEffect(() => {
+    if (hoveredNodeIdx === null) return;
+    const t = setTimeout(() => setHoveredNodeIdx(null), 4000);
+    return () => clearTimeout(t);
+  }, [hoveredNodeIdx]);
 
   useEffect(() => {
     if (mounted && expenses.length > prevExpensesLength.current) {
@@ -246,6 +256,7 @@ export function LivingFlow({
                   style={{ pointerEvents: "all", cursor: "pointer" }}
                   onMouseEnter={() => setHoveredNodeIdx(i)}
                   onMouseLeave={() => setHoveredNodeIdx(null)}
+                  onClick={() => setHoveredNodeIdx(i)}
                 />
                 {/* Glow ring on hover */}
                 {(isHovered || pt.node.isToday) && (
@@ -262,7 +273,7 @@ export function LivingFlow({
                   fillOpacity={pt.node.isToday ? 1 : (isHovered ? 0.9 : 0.45)}
                   stroke={col} strokeWidth={pt.node.isToday ? 2 : 1}
                   strokeOpacity={0.6}
-                  animate={pt.node.isToday ? { r: [r, r + 1.5, r], fillOpacity: [1, 0.8, 1] } : {}}
+                        animate={pt.node.isToday ? { r: [r, r + 1.5, r], fillOpacity: [1, 0.8, 1] } : {}}
                   transition={pt.node.isToday ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" } : {}}
                   style={{ pointerEvents: "none" }}
                 />
@@ -275,7 +286,7 @@ export function LivingFlow({
       {/* Tooltips — rendered outside overflow-hidden so they don't clip */}
       {nodePoints.map((pt, i) =>
         hoveredNodeIdx === i ? (
-          <NodeTooltip key={i} node={pt.node} x={pt.pctX} y={pt.pctY} />
+          <NodeTooltip key={i} node={pt.node} x={pt.pctX} y={pt.pctY} sym={sym} />
         ) : null
       )}
     </div>

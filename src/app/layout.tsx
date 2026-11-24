@@ -14,6 +14,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  // Resolves the generated share image (app/opengraph-image.tsx) to an absolute URL.
+  metadataBase: new URL("https://getpocketflow.vercel.app"),
   applicationName: "PocketFlow",
   appleWebApp: { capable: true, title: "PocketFlow", statusBarStyle: "black-translucent" },
   title: "PocketFlow | The co-pilot for your wallet.",
@@ -25,7 +27,8 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
+    images: ["/opengraph-image"],
     title: "PocketFlow — The co-pilot for your wallet",
     description: "Can I afford this today? PocketFlow is a decision-making companion.",
   },

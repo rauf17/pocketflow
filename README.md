@@ -14,6 +14,7 @@ A local-first budgeting app built around one question:
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Zustand](https://img.shields.io/badge/State-Zustand_5-orange?style=flat-square)](https://zustand-demo.pmnd.rs/)
 [![Gemini](https://img.shields.io/badge/AI-Gemini_2.5_Flash-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 
 </div>
@@ -22,6 +23,8 @@ A local-first budgeting app built around one question:
 
 ## Table of contents
 
+- [Screenshots](#screenshots)
+- [Try it](#try-it)
 - [Why PocketFlow](#why-pocketflow)
 - [Features](#features)
 - [Architecture](#architecture)
@@ -39,6 +42,49 @@ A local-first budgeting app built around one question:
 - [FAQ](#faq)
 - [Contributing](#contributing)
 - [License](#license)
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/dashboard-desktop.png" alt="PocketFlow dashboard showing today's safe-to-spend amount" width="80%">
+</p>
+
+<p align="center">
+  <img src="docs/dashboard-mobile.png" alt="Dashboard on a phone" width="22%">
+  &nbsp;
+  <img src="docs/goals-mobile.png" alt="Goals on a phone" width="22%">
+</p>
+
+<table>
+  <tr>
+    <td><img src="docs/review-desktop.png" alt="What-if simulator and weekly review"></td>
+    <td><img src="docs/analytics-desktop.png" alt="Spending insights"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>What-if simulator and weekly review</sub></td>
+    <td align="center"><sub>Spending insights</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/planner-desktop.png" alt="Weekly planner"></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><sub>Weekly planner</sub></td>
+  </tr>
+</table>
+
+All screenshots use the built-in sample data (see [Try it](#try-it)).
+
+---
+
+## Try it
+
+- **Live demo:** [getpocketflow.vercel.app](https://getpocketflow.vercel.app/). Tap **Explore with sample data** on the welcome screen to look around without entering anything. A banner lets you wipe the sample data and start fresh.
+- **Install on your phone:** PocketFlow is a PWA.
+  - **Android (Chrome):** menu (⋮) → **Install app**.
+  - **iPhone (Safari):** Share → **Add to Home Screen**.
+  - Updates arrive on their own the next time you open the app online. Your data is not affected.
 
 ---
 
@@ -83,6 +129,8 @@ The result is one number you can act on: **today's safe limit**.
 - **Installable PWA** with an offline-capable service worker (production builds).
 - **Local reminders** for bills and daily logging, through the browser Notification API.
 - **PIN lock**: an app lock for casual privacy (see [Privacy and data](#privacy-and-data)).
+- **Sample-data demo mode** so anyone can explore the app instantly.
+- **Accessibility**: visible keyboard focus, labelled controls and tap-friendly chart tooltips.
 - **Light and dark themes**, responsive from phone to desktop.
 
 ---
@@ -363,6 +411,8 @@ src/
 │   │   ├── advisor/            # AI co-pilot
 │   │   └── settings/           # Currency, balance, reminders, PIN
 │   ├── api/chat/               # Server route for Gemini
+│   ├── demo/                   # Loads sample data
+│   ├── opengraph-image.tsx     # Generated link-preview image
 │   └── manifest.ts             # PWA manifest
 ├── components/                 # UI, expense sheet, lock screen, snackbar, reminders
 ├── lib/
@@ -377,6 +427,7 @@ src/
 │   └── __tests__/              # Vitest suites
 ├── store/                      # Zustand stores and shared hooks
 public/                         # Service worker and icons
+docs/                           # README screenshots and share image
 ```
 
 ---
@@ -418,7 +469,6 @@ Ideas under consideration, not promises:
 - [ ] Cross-device sync without accounts
 - [ ] Automatic logging of recurring daily costs
 - [ ] Localization beyond currency formatting
-- [ ] Screenshots and an in-app demo mode
 
 ---
 
@@ -455,4 +505,4 @@ Keep budget math inside `src/lib/budgetEngine.ts` so every screen continues to s
 
 ## License
 
-No license has been added to this repository yet, so all rights are reserved by default. If you want others to be able to use or contribute to the code, add a `LICENSE` file (MIT is a common choice).
+Released under the [MIT License](LICENSE).

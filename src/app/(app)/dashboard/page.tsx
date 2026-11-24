@@ -412,6 +412,16 @@ export default function DashboardPage() {
 
         </motion.div>
 
+        {/* ── First-run nudge ────────────────────────────────────────────── */}
+        {expenses.length === 0 && (
+          <motion.div variants={itemVariants} className="w-full flex flex-col items-center gap-2 p-6 rounded-[2rem] bg-flow-emerald/5 border border-flow-emerald/15 text-center">
+            <span className="text-sm font-semibold text-foreground/90">Log your first expense</span>
+            <span className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+              Tap the + button and type something like &ldquo;500 lunch&rdquo;. Your limit for tomorrow updates the moment you save it.
+            </span>
+          </motion.div>
+        )}
+
         {/* ── Quick Links ────────────────────────────────────────────────── */}
         <motion.div variants={itemVariants} className="w-full flex flex-col gap-4">
 

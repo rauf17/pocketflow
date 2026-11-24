@@ -4,6 +4,7 @@ import { Gatekeeper, MobileHeader } from "@/components/Gatekeeper";
 import { NavigationTour } from "@/components/NavigationTour";
 import { Snackbar } from "@/components/Snackbar";
 import { ReminderManager } from "@/components/ReminderManager";
+import { DemoBanner } from "@/components/DemoBanner";
 
 export default function AppLayout({
   children,
@@ -31,6 +32,7 @@ export default function AppLayout({
         <Sidebar />
         
         <main className="flex-1 md:ml-72 w-full pb-24 md:pb-0 min-h-screen">
+          <DemoBanner />
           {children}
         </main>
 

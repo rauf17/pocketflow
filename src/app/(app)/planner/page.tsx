@@ -97,7 +97,7 @@ export default function PlannerPage() {
                 </div>
                 
                 <span className="text-lg font-light text-muted-foreground">
-                  {profile.expectedSpend === 0 ? "PKR 0" : `${currencySymbol}${profile.expectedSpend.toFixed(0)}`}
+                  {`${currencySymbol}${profile.expectedSpend.toFixed(0)}`}
                 </span>
               </button>
 

@@ -14,6 +14,7 @@ import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getCurrencySymbol } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
 
 const DATE_FMT = "yyyy-MM-dd";
 const todayStr = () => format(new Date(), DATE_FMT);
@@ -141,6 +142,7 @@ export function ExpenseInput() {
           categoryId,
         });
         const warning = limitCrossingMessage(category, spentBefore, value, (n) => formatMoney(n, user?.currency));
+        haptic(warning ? "warning" : "success");
         showSnackbar({
           message: warning ?? `Added ${formatMoney(value, user?.currency)} expense`,
           tone: warning ? "warning" : "info",
